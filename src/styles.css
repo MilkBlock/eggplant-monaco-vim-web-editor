@@ -459,22 +459,10 @@ select {
   padding: 8px;
 }
 
-.typst-preview svg {
+.typst-preview-image {
   display: block;
   max-width: 100%;
   height: auto;
-}
-
-.typst-preview svg text,
-.typst-preview svg tspan,
-.typst-preview svg path,
-.typst-preview svg use {
-  fill: #0f1720 !important;
-}
-
-.typst-preview svg line,
-.typst-preview svg polyline {
-  stroke: #0f1720 !important;
 }
 
 .typst-preview.compact {

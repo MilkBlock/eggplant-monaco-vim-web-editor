@@ -123,6 +123,20 @@ function describeConstraintScope(
   return `Scoped to ${activeState.constraintFilterNodeId}`;
 }
 
+function encodeSvgDataUri(svg: string): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function buildTypstPreviewImageStyle(rendered: RenderedTypstSnippet) {
+  const safeWidth = rendered.width > 0 ? rendered.width : 48;
+  const safeHeight = rendered.height > 0 ? rendered.height : 16;
+  const scale = Math.min(4, Math.max(2.5, 34 / safeHeight));
+  return {
+    width: `${safeWidth * scale}px`,
+    height: `${safeHeight * scale}px`,
+  };
+}
+
 function renderTypstPreview(
   targetId: string,
   fallbackSource: string,
@@ -136,7 +150,17 @@ function renderTypstPreview(
   if (typst.mode === 'text-fallback') {
     return <pre className="typst-fallback-text">{displayTextFallbackSource(fallbackSource)}</pre>;
   }
-  return <div className="typst-preview compact" dangerouslySetInnerHTML={{ __html: typst.svg }} />;
+  return (
+    <div className="typst-preview compact">
+      <img
+        alt={`Typst preview for ${targetId}`}
+        className="typst-preview-image"
+        draggable={false}
+        src={encodeSvgDataUri(typst.svg)}
+        style={buildTypstPreviewImageStyle(typst)}
+      />
+    </div>
+  );
 }
 
 export default function App() {
