@@ -15,17 +15,6 @@ function parseSvgDimension(svgMarkup: string, attr: 'width' | 'height'): number 
   return match ? Number(match[1]) : 0;
 }
 
-function normalizeTypstLabelText(text: string): string {
-  const trimmed = text.trim();
-  if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length >= 4) {
-    return trimmed.slice(2, -2).trim();
-  }
-  if (trimmed.startsWith('$') && trimmed.endsWith('$') && trimmed.length >= 2) {
-    return trimmed.slice(1, -1).trim();
-  }
-  return trimmed;
-}
-
 function encodeSvgDataUri(svgMarkup: string): string {
   return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgMarkup)))}`;
 }
@@ -41,7 +30,6 @@ function findNodeShape(nodeGroup: Element): SVGGraphicsElement | null {
 function applyTypstRenderingsToSvg(
   svgMarkup: string,
   typstRenderings: Record<string, RenderedTypstSnippet>,
-  typstSources: Record<string, string>,
 ): string {
   if (!Object.keys(typstRenderings).length) {
     return svgMarkup;
@@ -61,38 +49,11 @@ function applyTypstRenderingsToSvg(
 
   try {
     const nodeGroups = Array.from(root.querySelectorAll('g.node'));
-    const consumedNodeGroups = new Set<Element>();
-
-    const resolveNodeGroupForTarget = (targetId: string): Element | undefined => {
-      const byTitle = nodeGroups.find((group) => group.querySelector('title')?.textContent === targetId);
-      if (byTitle && !consumedNodeGroups.has(byTitle)) {
-        return byTitle;
-      }
-
-      const source = typstSources[targetId];
-      if (!source) {
-        return undefined;
-      }
-      const normalizedSource = normalizeTypstLabelText(source);
-      if (!normalizedSource) {
-        return undefined;
-      }
-
-      return nodeGroups.find((group) => {
-        if (consumedNodeGroups.has(group)) {
-          return false;
-        }
-        const firstText = group.querySelector('text')?.textContent ?? '';
-        return normalizeTypstLabelText(firstText) === normalizedSource;
-      });
-    };
-
     for (const [targetId, rendered] of Object.entries(typstRenderings)) {
-      const nodeGroup = resolveNodeGroupForTarget(targetId);
+      const nodeGroup = nodeGroups.find((group) => group.querySelector('title')?.textContent === targetId);
       if (!nodeGroup) {
         continue;
       }
-      consumedNodeGroups.add(nodeGroup);
 
       const shape = findNodeShape(nodeGroup);
       if (!shape) {
@@ -165,15 +126,6 @@ function applyTypstRenderingsToSvg(
       }
     }
 
-    // If a label still contains math wrappers, strip them so users don't see raw `$...$`.
-    for (const textNode of Array.from(root.querySelectorAll('g.node text'))) {
-      const original = textNode.textContent ?? '';
-      const normalized = normalizeTypstLabelText(original);
-      if (normalized !== original) {
-        textNode.textContent = normalized;
-      }
-    }
-
     return new XMLSerializer().serializeToString(root);
   } finally {
     host.remove();
@@ -183,12 +135,11 @@ function applyTypstRenderingsToSvg(
 export async function renderDotToSvg(
   dot: string,
   typstRenderings: Record<string, RenderedTypstSnippet> = {},
-  typstSources: Record<string, string> = {},
 ): Promise<string> {
   const renderer = await viz();
   const svgMarkup = renderer.renderString(dot, {
     format: 'svg',
     engine: 'dot',
   });
-  return applyTypstRenderingsToSvg(svgMarkup, typstRenderings, typstSources);
+  return applyTypstRenderingsToSvg(svgMarkup, typstRenderings);
 }
