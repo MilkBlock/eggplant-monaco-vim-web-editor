@@ -1,5 +1,5 @@
 import type { PatternIr } from '@eggplant-vscode/ir';
-import { collectTypstReplacementSources, patternIrToDotWithMode } from '@eggplant-vscode/dot';
+import { collectTypstReplacementSources, patternIrToDotWithMode, type DotViewMode } from '@eggplant-vscode/dot';
 
 export type WebPreviewFixture = {
   id: string;
@@ -39,20 +39,22 @@ function buildDemoSvg(title: string, accent: string, nodeLabels: string[]): stri
   `.trim();
 }
 
-function buildSharedDotFromIr(ir: PatternIr): string {
-  return patternIrToDotWithMode(ir, 'combined', 'recursive', 'tree-safe', {});
+export function buildSharedDotFromIr(ir: PatternIr, mode: DotViewMode = 'combined'): string {
+  return patternIrToDotWithMode(ir, mode, 'recursive', 'tree-safe', {});
 }
 
-function buildTypstSourcesFromIr(ir: PatternIr): Record<string, string> {
+export function buildTypstSourcesFromIr(ir: PatternIr, mode: DotViewMode = 'combined'): Record<string, string> {
   const byTargetId: Record<string, string> = {};
-  for (const entry of collectTypstReplacementSources(ir, 'combined', 'recursive', 'tree-safe')) {
+  for (const entry of collectTypstReplacementSources(ir, mode, 'recursive', 'tree-safe')) {
     byTargetId[entry.targetId] = entry.source;
   }
-  for (const effect of ir.action_effects) {
-    byTargetId[`effect:${effect.id}`] ??= effect.source_text;
-  }
-  for (const seed of ir.seed_facts) {
-    byTargetId[`seed:${seed.id}`] = seed.source_text;
+  if (mode === 'action' || mode === 'combined') {
+    for (const effect of ir.action_effects) {
+      byTargetId[`effect:${effect.id}`] ??= effect.source_text;
+    }
+    for (const seed of ir.seed_facts) {
+      byTargetId[`seed:${seed.id}`] = seed.source_text;
+    }
   }
   return byTargetId;
 }
@@ -63,6 +65,7 @@ export function buildFixtureFromScope(
   description: string,
   ruleLabel: string,
   ir: PatternIr,
+  mode: DotViewMode = 'combined',
 ): WebPreviewFixture {
   const accent = sampleAccentById[sampleId] ?? '#ffbf69';
   const labels = ir.nodes.map((node) => node.id).slice(0, 4);
@@ -73,10 +76,10 @@ export function buildFixtureFromScope(
     id: sampleId,
     fileName,
     description: `${description} Active rule: ${ruleLabel}.`,
-    dot: buildSharedDotFromIr(ir),
+    dot: buildSharedDotFromIr(ir, mode),
     svg: buildDemoSvg(`${fileName} · ${ruleLabel}`, accent, nodeLabels),
     ir,
-    typstSources: buildTypstSourcesFromIr(ir),
+    typstSources: buildTypstSourcesFromIr(ir, mode),
   };
 }
 

@@ -9,6 +9,7 @@ import {
   collectSourceTargetIds,
   createDefaultPreviewInteractionState,
   drilldownConstraintNode,
+  modeLabel,
   projectPreviewInteractionState,
   selectConstraint,
   selectRuleCheck,
@@ -18,6 +19,7 @@ import {
   type PreviewInteractionState,
 } from '@eggplant-shared/previewCore';
 import type { PatternIr } from '@eggplant-vscode/ir';
+import type { DotViewMode } from '@eggplant-vscode/dot';
 import { findRedundantActionInsertChecks } from '@eggplant-vscode/ruleChecks';
 import {
   displayTextFallbackSource,
@@ -28,7 +30,7 @@ import { collectTypstReplacementSources } from '@eggplant-vscode/dot';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
-import { buildFixtureFromScope, webPreviewFixtures } from './webPreviewFixtures';
+import { buildFixtureFromScope, buildTypstSourcesFromIr, webPreviewFixtures } from './webPreviewFixtures';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { type WebRuleScope, webRuleScopesBySampleId } from './webRuleScopes';
@@ -63,6 +65,27 @@ const sampleFiles: SampleFile[] = [
 
 const rustKeywords = ['fn', 'struct', 'enum', 'impl', 'let', 'pub', 'use', 'mod', 'match', 'if', 'else', 'return'];
 const utf8Encoder = new TextEncoder();
+const dotViewModes: DotViewMode[] = ['pattern', 'action', 'combined'];
+
+type GraphContextMenuState = {
+  open: boolean;
+  x: number;
+  y: number;
+  targetId: string;
+  typstSource: string;
+  typstStatus: string;
+  nodeConstraints: PreviewConstraintEntry[];
+};
+
+const closedGraphContextMenu: GraphContextMenuState = {
+  open: false,
+  x: 0,
+  y: 0,
+  targetId: '',
+  typstSource: '',
+  typstStatus: 'Typst: no source',
+  nodeConstraints: [],
+};
 
 function countKeywordHits(source: string) {
   return rustKeywords
@@ -148,6 +171,30 @@ function buildTypstPreviewInlineStyle(rendered: RenderedTypstSnippet) {
   };
 }
 
+function mergeTypstSources(
+  baseSources: Record<string, string>,
+  overrides: Record<string, string>,
+): Record<string, string> {
+  const merged = { ...baseSources };
+  for (const [targetId, source] of Object.entries(overrides)) {
+    const trimmed = source.trim();
+    if (trimmed.length === 0) {
+      delete merged[targetId];
+      continue;
+    }
+    merged[targetId] = trimmed;
+  }
+  return merged;
+}
+
+function findGraphNodeTargetId(target: EventTarget | null): string {
+  if (!(target instanceof Element)) {
+    return '';
+  }
+  const nodeGroup = target.closest('g.node');
+  return nodeGroup?.querySelector('title')?.textContent?.trim() ?? '';
+}
+
 function renderTypstPreview(
   targetId: string,
   fallbackSource: string,
@@ -179,13 +226,21 @@ function renderTypstPreview(
 export default function App() {
   const [selectedId, setSelectedId] = useState(sampleFiles[0].id);
   const [source, setSource] = useState(sampleFiles[0].source);
+  const [dotViewMode, setDotViewMode] = useState<DotViewMode>('combined');
   const [interactionState, setInteractionState] = useState<PreviewInteractionState>(
     createDefaultPreviewInteractionState(),
   );
   const [cursorUtf16Offset, setCursorUtf16Offset] = useState(0);
   const [typstRenderings, setTypstRenderings] = useState<Record<string, RenderedTypstSnippet>>({});
+  const [typstOverrides, setTypstOverrides] = useState<Record<string, string>>({});
   const [typstStatus, setTypstStatus] = useState('Waiting to render shared typst targets...');
+  const [clipboardStatus, setClipboardStatus] = useState('');
+  const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
+  const [typstEditorTargetId, setTypstEditorTargetId] = useState('');
+  const [typstEditorValue, setTypstEditorValue] = useState('');
+  const [refreshNonce, setRefreshNonce] = useState(0);
   const statusRef = useRef<HTMLDivElement | null>(null);
+  const graphPreviewRef = useRef<HTMLDivElement | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
   const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
 
@@ -205,9 +260,17 @@ export default function App() {
   const [ruleSyncStatus, setRuleSyncStatus] = useState('Waiting for extractor...');
   const [graphSvg, setGraphSvg] = useState('');
   const [graphLayoutStatus, setGraphLayoutStatus] = useState('Graph layout: waiting...');
-  const fixture = useMemo(() => {
+  const fixtureBase = useMemo(() => {
     if (!activeRuleScope) {
-      return webPreviewFixtures[selectedFile.id];
+      const fallbackFixture = webPreviewFixtures[selectedFile.id];
+      return buildFixtureFromScope(
+        selectedFile.id,
+        selectedFile.label,
+        selectedFile.description,
+        scopeLabelFromIr(fallbackFixture.ir),
+        fallbackFixture.ir,
+        dotViewMode,
+      );
     }
     return buildFixtureFromScope(
       selectedFile.id,
@@ -215,8 +278,21 @@ export default function App() {
       selectedFile.description,
       activeRuleScope.label,
       activeRuleScope.ir,
+      dotViewMode,
     );
-  }, [activeRuleScope, selectedFile]);
+  }, [activeRuleScope, dotViewMode, selectedFile]);
+  const fixture = useMemo(
+    () => ({
+      ...fixtureBase,
+      typstSources: mergeTypstSources(
+        activeRuleScope
+          ? buildTypstSourcesFromIr(activeRuleScope.ir, dotViewMode)
+          : fixtureBase.typstSources,
+        typstOverrides,
+      ),
+    }),
+    [activeRuleScope, dotViewMode, fixtureBase, typstOverrides],
+  );
 
   const stats = useMemo(() => {
     const lines = source.split('\n');
@@ -245,7 +321,7 @@ export default function App() {
   const previewState = useMemo(
     () =>
       buildPreviewPanelState({
-        mode: 'combined',
+        mode: dotViewMode,
         sourceMode: 'ast',
         selectedLabelStyle: 'recursive',
         effectiveLabelStyle: 'recursive',
@@ -256,7 +332,7 @@ export default function App() {
         typstRenderings,
         typstSources: fixture.typstSources,
         typstStatusByTargetId,
-        sourceTargetIds: collectSourceTargetIds(fixture.ir, 'combined'),
+        sourceTargetIds: collectSourceTargetIds(fixture.ir, dotViewMode),
         allConstraints,
         constraints: visibleConstraintPool,
         ruleChecks,
@@ -274,6 +350,7 @@ export default function App() {
     [
       activeState,
       allConstraints,
+      dotViewMode,
       fixture,
       ruleChecks,
       typstRenderings,
@@ -325,14 +402,20 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture.svg, previewState.dot, typstRenderings]);
+  }, [fixture.svg, previewState.dot, refreshNonce, typstRenderings]);
 
   useEffect(() => {
     setSource(selectedFile.source);
+    setDotViewMode('combined');
     setCursorUtf16Offset(0);
     setActiveRuleScope(null);
     setRuleSyncStatus('Waiting for extractor...');
     setInteractionState(createDefaultPreviewInteractionState());
+    setTypstOverrides({});
+    setGraphContextMenu(closedGraphContextMenu);
+    setTypstEditorTargetId('');
+    setTypstEditorValue('');
+    setClipboardStatus('');
   }, [selectedFile]);
 
   useEffect(() => {
@@ -400,7 +483,7 @@ export default function App() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [cursorByteOffset, selectedFile, source]);
+  }, [cursorByteOffset, refreshNonce, selectedFile, source]);
 
   useEffect(() => {
     return () => {
@@ -424,10 +507,26 @@ export default function App() {
     }
 
     const runRender = async () => {
+      const maxAttempts = 3;
       setTypstStatus(`Rendering ${entries.length} shared typst target(s) in the browser...`);
       const startedAt = performance.now();
       const { renderWebTypstSnippets } = await import('./webTypstAdapter');
-      const renderings = await renderWebTypstSnippets(entries);
+      const renderings: Record<string, RenderedTypstSnippet> = {};
+      let remaining = entries;
+      let attempts = 0;
+
+      while (!cancelled && remaining.length > 0 && attempts < maxAttempts) {
+        attempts += 1;
+        if (attempts > 1) {
+          setTypstStatus(
+            `Retrying ${remaining.length} unresolved typst target(s) (attempt ${attempts}/${maxAttempts})...`,
+          );
+        }
+        const batch = await renderWebTypstSnippets(remaining);
+        Object.assign(renderings, batch);
+        remaining = remaining.filter((entry) => !Object.prototype.hasOwnProperty.call(renderings, entry.targetId));
+      }
+
       if (cancelled) {
         return;
       }
@@ -435,7 +534,7 @@ export default function App() {
       setTypstStatus(
         `Shared typst adapter rendered ${Object.keys(renderings).length}/${entries.length} target(s) in ${(
           performance.now() - startedAt
-        ).toFixed(0)}ms.`,
+        ).toFixed(0)}ms over ${attempts} attempt(s).`,
       );
     };
 
@@ -451,7 +550,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture]);
+  }, [fixture, refreshNonce]);
 
   const handleMount: OnMount = (editor) => {
     if (statusRef.current) {

@@ -4,15 +4,16 @@ import { setImportWasmModule as setCompilerWasmModule } from '@myriaddreamin/typ
 import rendererWasmUrl from '@myriaddreamin/typst-ts-renderer/wasm?url';
 import compilerWasmUrl from '@myriaddreamin/typst-ts-web-compiler/wasm?url';
 import {
+  buildTypstMathDocument,
+  parseTypstSvgDimension,
   RenderedTypstSnippet,
   TypstSnippetRenderer,
-  renderTypstSnippetWithRenderer,
 } from '@eggplant-shared/typstCore';
 
 const successfulRenderCache = new Map<string, RenderedTypstSnippet>();
-const inFlightRenderCache = new Map<string, Promise<RenderedTypstSnippet | null>>();
+const inFlightRenderCache = new Map<string, Promise<RenderedTypstSnippet>>();
 let wasmImporterConfigured = false;
-const RENDER_TIMEOUT_MS = 15000;
+const RENDER_TIMEOUT_MS = 30000;
 
 function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -51,9 +52,7 @@ export async function renderWebTypstSnippets(
   const result: Record<string, RenderedTypstSnippet> = {};
   for (const { targetId, source } of sources) {
     const rendered = await renderTypstSource(source);
-    if (rendered) {
-      result[targetId] = rendered;
-    }
+    result[targetId] = rendered;
   }
   return result;
 }
@@ -78,7 +77,7 @@ function ensureWasmImporter(): void {
   wasmImporterConfigured = true;
 }
 
-async function renderTypstSource(source: string): Promise<RenderedTypstSnippet | null> {
+async function renderTypstSource(source: string): Promise<RenderedTypstSnippet> {
   const cached = successfulRenderCache.get(source);
   if (cached) {
     return cached;
@@ -89,19 +88,35 @@ async function renderTypstSource(source: string): Promise<RenderedTypstSnippet |
     return inFlight;
   }
 
-  const promise = renderTypstSnippetWithRenderer(source, webTypstRenderer)
-    .then((rendered) => {
-      successfulRenderCache.set(source, rendered);
-      return rendered;
-    })
-    .catch((error) => {
-      console.warn('Eggplant web typst render failed', error);
-      return null;
-    })
-    .finally(() => {
-      inFlightRenderCache.delete(source);
-    });
+  const promise = renderMathSnippet(source).finally(() => {
+    inFlightRenderCache.delete(source);
+  });
 
   inFlightRenderCache.set(source, promise);
   return promise;
+}
+
+async function renderMathSnippet(source: string): Promise<RenderedTypstSnippet> {
+  ensureWasmImporter();
+  try {
+    const svg = await withTimeout(webTypstRenderer.render(buildTypstMathDocument(source)), 'typst math render');
+    const rendered: RenderedTypstSnippet = {
+      svg,
+      width: parseTypstSvgDimension(svg, 'width'),
+      height: parseTypstSvgDimension(svg, 'height'),
+      mode: 'math',
+    };
+    successfulRenderCache.set(source, rendered);
+    return rendered;
+  } catch (error) {
+    console.warn('Eggplant web typst math render failed; using text fallback.', error);
+    const rendered: RenderedTypstSnippet = {
+      svg: '',
+      width: 0,
+      height: 0,
+      mode: 'text-fallback',
+    };
+    successfulRenderCache.set(source, rendered);
+    return rendered;
+  }
 }
