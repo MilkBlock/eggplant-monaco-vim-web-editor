@@ -195,21 +195,6 @@ function createInlineTypstSvg(
   return nestedSvg;
 }
 
-function setFallbackNodeText(textNodes: SVGTextElement[], source: string): void {
-  const lines = normalizeTypstLabelText(source)
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  if (lines.length === 0) {
-    return;
-  }
-
-  textNodes.forEach((textNode, index) => {
-    textNode.textContent = lines[index] ?? '';
-  });
-}
-
 function collectNodeTextNodes(nodeGroup: Element): SVGTextElement[] {
   return Array.from(nodeGroup.children).filter(
     (node): node is SVGTextElement => node.tagName.toLowerCase() === 'text',
@@ -238,16 +223,12 @@ function applyNodeRenderings(
     const source = typstSources[title];
     const rendered = typstRenderings[title];
     if (!source || !rendered || rendered.mode !== 'math') {
-      if (source) {
-        setFallbackNodeText(textNodes, source);
-      }
       continue;
     }
 
     const bounds = extractNodeBounds(nodeGroup);
     const overlay = bounds ? createInlineTypstSvg(root.ownerDocument, rendered, bounds) : null;
     if (!overlay) {
-      setFallbackNodeText(textNodes, source);
       continue;
     }
 

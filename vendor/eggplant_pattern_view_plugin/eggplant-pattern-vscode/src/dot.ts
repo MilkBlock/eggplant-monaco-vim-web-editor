@@ -842,7 +842,16 @@ function actionEffectTypstSource(
   }
   const parsed = parseSemanticInsert(sourceText);
   if (!parsed) {
-    return compactExpression(sourceText);
+    return actionEffectLabel(
+      ir,
+      sourceText,
+      labelStyle,
+      strategy,
+      effectByBinding,
+      nodeById,
+      incomingCounts,
+      effectId
+    );
   }
 
   if (labelStyle === "recursive") {

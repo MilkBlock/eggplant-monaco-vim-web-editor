@@ -17,6 +17,17 @@ const sampleAccentById: Record<string, string> = {
   relation: '#7dd3fc',
 };
 
+function compactSourceText(value: string): string {
+  return value
+    .replace(/\b(?:pat|matched|ctx|tx)\./g, '')
+    .replace(/\.clone\(\)/g, '')
+    .replace(/\.handle\(\)/g, '')
+    .replace(/&([A-Za-z_][A-Za-z0-9_]*)/g, '$1')
+    .replace(/"([^"]+)"\.to_owned\(\)/g, '"$1"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function buildDemoSvg(title: string, accent: string, nodeLabels: string[]): string {
   const nodes = nodeLabels
     .map(
@@ -40,20 +51,20 @@ function buildDemoSvg(title: string, accent: string, nodeLabels: string[]): stri
 }
 
 export function buildSharedDotFromIr(ir: PatternIr, mode: DotViewMode = 'combined'): string {
-  return patternIrToDotWithMode(ir, mode, 'recursive', 'tree-safe', {});
+  return patternIrToDotWithMode(ir, mode, 'recursive', 'dag-expand', {});
 }
 
 export function buildTypstSourcesFromIr(ir: PatternIr, mode: DotViewMode = 'combined'): Record<string, string> {
   const byTargetId: Record<string, string> = {};
-  for (const entry of collectTypstReplacementSources(ir, mode, 'recursive', 'tree-safe')) {
+  for (const entry of collectTypstReplacementSources(ir, mode, 'recursive', 'dag-expand')) {
     byTargetId[entry.targetId] = entry.source;
   }
   if (mode === 'action' || mode === 'combined') {
     for (const effect of ir.action_effects) {
-      byTargetId[`effect:${effect.id}`] ??= effect.source_text;
+      byTargetId[`effect:${effect.id}`] ??= compactSourceText(effect.source_text);
     }
     for (const seed of ir.seed_facts) {
-      byTargetId[`seed:${seed.id}`] = seed.source_text;
+      byTargetId[`seed:${seed.id}`] = compactSourceText(seed.source_text);
     }
   }
   return byTargetId;
