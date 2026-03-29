@@ -163,6 +163,13 @@ function renderTypstPreview(
   );
 }
 
+function shouldShowTypstSource(
+  targetId: string,
+  typstRenderings: Record<string, RenderedTypstSnippet>,
+): boolean {
+  return typstRenderings[targetId]?.mode === 'text-fallback';
+}
+
 export default function App() {
   const [selectedId, setSelectedId] = useState(sampleFiles[0].id);
   const [source, setSource] = useState(sampleFiles[0].source);
@@ -711,7 +718,9 @@ export default function App() {
                         typstRenderings,
                         typstStatusByTargetId,
                       )}
-                      <code className="typst-source">{fixture.typstSources[node.id] ?? node.label}</code>
+                      {shouldShowTypstSource(node.id, typstRenderings) ? (
+                        <code className="typst-source">{fixture.typstSources[node.id] ?? node.label}</code>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -732,7 +741,9 @@ export default function App() {
                         typstRenderings,
                         typstStatusByTargetId,
                       )}
-                      <code className="typst-source">{fixture.typstSources[targetId] ?? effect.source_text}</code>
+                      {shouldShowTypstSource(targetId, typstRenderings) ? (
+                        <code className="typst-source">{fixture.typstSources[targetId] ?? effect.source_text}</code>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -752,7 +763,9 @@ export default function App() {
                         typstRenderings,
                         typstStatusByTargetId,
                       )}
-                      <code className="typst-source">{fixture.typstSources[targetId] ?? seed.source_text}</code>
+                      {shouldShowTypstSource(targetId, typstRenderings) ? (
+                        <code className="typst-source">{fixture.typstSources[targetId] ?? seed.source_text}</code>
+                      ) : null}
                     </div>
                   );
                 })}
