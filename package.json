@@ -13,6 +13,7 @@
     "@myriaddreamin/typst-ts-renderer": "^0.7.0-rc2",
     "@myriaddreamin/typst-ts-web-compiler": "^0.7.0-rc2",
     "@myriaddreamin/typst.ts": "^0.7.0-rc2",
+    "@viz-js/viz": "^3.25.0",
     "monaco-vim": "^0.4.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

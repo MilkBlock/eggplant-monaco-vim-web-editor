@@ -25,6 +25,7 @@ import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
 import { buildFixtureFromScope, webPreviewFixtures } from './webPreviewFixtures';
 import { extractPatternIr } from './webExtractor';
+import { renderDotToSvg } from './webDotRenderer';
 
 type SampleFile = {
   id: string;
@@ -132,6 +133,8 @@ export default function App() {
     source: 'extractor';
   } | null>(null);
   const [ruleSyncStatus, setRuleSyncStatus] = useState('Waiting for extractor...');
+  const [graphSvg, setGraphSvg] = useState('');
+  const [graphLayoutStatus, setGraphLayoutStatus] = useState('Graph layout: waiting...');
   const fixture = useMemo(() => {
     if (!activeRuleScope) {
       return webPreviewFixtures[selectedFile.id];
@@ -212,6 +215,47 @@ export default function App() {
     () => buildConstraintCountByNodeId(visibleConstraintPool),
     [visibleConstraintPool],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    const startedAt = performance.now();
+
+    setGraphSvg(fixture.svg);
+    setGraphLayoutStatus('Graph layout: running Graphviz dot...');
+
+    const runLayout = async () => {
+      try {
+        const svg = await renderDotToSvg(previewState.dot);
+        if (cancelled) {
+          return;
+        }
+        setGraphSvg(svg);
+        setGraphLayoutStatus(
+          `Graphviz dot layout rendered in ${(performance.now() - startedAt).toFixed(0)}ms.`,
+        );
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        setGraphSvg(fixture.svg);
+        setGraphLayoutStatus(`Graphviz layout failed; showing fallback snapshot. (${message})`);
+      }
+    };
+
+    runLayout().catch((error) => {
+      if (cancelled) {
+        return;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      setGraphSvg(fixture.svg);
+      setGraphLayoutStatus(`Graphviz layout failed; showing fallback snapshot. (${message})`);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fixture.svg, previewState.dot]);
 
   useEffect(() => {
     setSource(selectedFile.source);
@@ -465,12 +509,13 @@ export default function App() {
             <div className="preview-card">
               <div className="panel-header">
                 <h3>Graph Snapshot</h3>
-                <span>{typstStatus}</span>
+                <span>{graphLayoutStatus}</span>
               </div>
               <div
                 className="graph-preview"
-                dangerouslySetInnerHTML={{ __html: previewState.svg }}
+                dangerouslySetInnerHTML={{ __html: graphSvg }}
               />
+              <p className="subtle">{typstStatus}</p>
             </div>
 
             <div className="preview-card">
