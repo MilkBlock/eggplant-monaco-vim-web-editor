@@ -290,7 +290,7 @@ export default function App() {
 
     const runLayout = async () => {
       try {
-        const svg = await renderDotToSvg(previewState.dot, typstRenderings);
+        const svg = await renderDotToSvg(previewState.dot, typstRenderings, fixture.typstSources);
         if (cancelled) {
           return;
         }
