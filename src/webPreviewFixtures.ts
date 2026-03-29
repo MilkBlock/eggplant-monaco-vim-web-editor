@@ -1,4 +1,5 @@
 import type { PatternIr } from '@eggplant-vscode/ir';
+import { patternIrToDotWithMode } from '@eggplant-vscode/dot';
 
 export type WebPreviewFixture = {
   id: string;
@@ -38,19 +39,8 @@ function buildDemoSvg(title: string, accent: string, nodeLabels: string[]): stri
   `.trim();
 }
 
-function buildDemoDotFromIr(ir: PatternIr): string {
-  const lines = ['digraph EggplantPattern {'];
-  for (const edge of ir.edges) {
-    lines.push(`  "${edge.from}" -> "${edge.to}";`);
-  }
-  for (const effect of ir.action_effects) {
-    lines.push(`  "effect:${effect.id}" [shape=box];`);
-  }
-  for (const fact of ir.seed_facts) {
-    lines.push(`  "seed:${fact.id}" [shape=ellipse];`);
-  }
-  lines.push('}');
-  return lines.join('\n');
+function buildSharedDotFromIr(ir: PatternIr): string {
+  return patternIrToDotWithMode(ir, 'combined', 'recursive', 'tree-safe', {});
 }
 
 function buildTypstSourcesFromIr(ir: PatternIr): Record<string, string> {
@@ -83,7 +73,7 @@ export function buildFixtureFromScope(
     id: sampleId,
     fileName,
     description: `${description} Active rule: ${ruleLabel}.`,
-    dot: buildDemoDotFromIr(ir),
+    dot: buildSharedDotFromIr(ir),
     svg: buildDemoSvg(`${fileName} · ${ruleLabel}`, accent, nodeLabels),
     ir,
     typstSources: buildTypstSourcesFromIr(ir),
