@@ -77,6 +77,8 @@ type GraphContextMenuState = {
   nodeConstraints: PreviewConstraintEntry[];
 };
 
+type MonacoEditorInstance = Parameters<OnMount>[0];
+
 const closedGraphContextMenu: GraphContextMenuState = {
   open: false,
   x: 0,
@@ -235,12 +237,14 @@ export default function App() {
   const [typstOverrides, setTypstOverrides] = useState<Record<string, string>>({});
   const [typstStatus, setTypstStatus] = useState('Waiting to render shared typst targets...');
   const [clipboardStatus, setClipboardStatus] = useState('');
+  const [vimEnabled, setVimEnabled] = useState(true);
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
   const [typstEditorTargetId, setTypstEditorTargetId] = useState('');
   const [typstEditorValue, setTypstEditorValue] = useState('');
   const [refreshNonce, setRefreshNonce] = useState(0);
   const statusRef = useRef<HTMLDivElement | null>(null);
   const graphPreviewRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<MonacoEditorInstance | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
   const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
 
@@ -486,11 +490,31 @@ export default function App() {
   }, [cursorByteOffset, refreshNonce, selectedFile, source]);
 
   useEffect(() => {
+    if (!editorRef.current) {
+      return;
+    }
+    if (!vimEnabled) {
+      vimModeRef.current?.dispose();
+      vimModeRef.current = null;
+      if (statusRef.current) {
+        statusRef.current.textContent = 'Vim mode off';
+      }
+      return;
+    }
+    if (!statusRef.current) {
+      return;
+    }
+    vimModeRef.current?.dispose();
+    vimModeRef.current = initVimMode(editorRef.current, statusRef.current);
+  }, [vimEnabled]);
+
+  useEffect(() => {
     return () => {
       cursorListenerRef.current?.dispose();
       cursorListenerRef.current = null;
       vimModeRef.current?.dispose();
       vimModeRef.current = null;
+      editorRef.current = null;
     };
   }, []);
 
@@ -570,9 +594,12 @@ export default function App() {
   }, [fixture, refreshNonce]);
 
   const handleMount: OnMount = (editor) => {
-    if (statusRef.current) {
+    editorRef.current = editor;
+    if (vimEnabled && statusRef.current) {
       vimModeRef.current?.dispose();
       vimModeRef.current = initVimMode(editor, statusRef.current);
+    } else if (statusRef.current) {
+      statusRef.current.textContent = 'Vim mode off';
     }
     cursorListenerRef.current?.dispose();
     const model = editor.getModel();
@@ -805,6 +832,16 @@ export default function App() {
             <div className="toolbar-meta">
               <span>{stats.lineCount} lines</span>
               <span>{stats.charCount} chars</span>
+              <label className="editor-mode-toggle" htmlFor="vim-mode-toggle">
+                <input
+                  checked={vimEnabled}
+                  id="vim-mode-toggle"
+                  onChange={(event) => setVimEnabled(event.target.checked)}
+                  type="checkbox"
+                />
+                <span className="editor-mode-toggle-slider" />
+                <span className="editor-mode-toggle-label">{vimEnabled ? 'Vim on' : 'Vim off'}</span>
+              </label>
             </div>
           </div>
           <div className="editor-frame">

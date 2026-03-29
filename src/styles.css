@@ -31,7 +31,7 @@ select {
 .app-shell {
   display: grid;
   grid-template-columns: 320px 1fr;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .sidebar {
@@ -42,6 +42,7 @@ select {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overflow: auto;
 }
 
 .brand-block h1,
@@ -131,18 +132,24 @@ select {
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.75fr);
   gap: 18px;
   padding: 20px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .editor-panel,
 .preview-panel {
-  min-height: calc(100vh - 40px);
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
 }
 
 .editor-frame {
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -165,6 +172,60 @@ select {
 .preview-stack {
   display: grid;
   gap: 12px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.editor-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.editor-mode-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.editor-mode-toggle-slider {
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.editor-mode-toggle-slider::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f4f1e8;
+  transition: transform 0.2s ease;
+}
+
+.editor-mode-toggle input:checked + .editor-mode-toggle-slider {
+  background: rgba(255, 191, 105, 0.35);
+}
+
+.editor-mode-toggle input:checked + .editor-mode-toggle-slider::after {
+  transform: translateX(18px);
+}
+
+.editor-mode-toggle-label {
+  font-size: 12px;
+  color: rgba(244, 241, 232, 0.76);
+  min-width: 48px;
 }
 
 .graph-preview {
@@ -573,18 +634,28 @@ select {
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 1fr;
+    height: auto;
   }
 
   .workspace {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
   }
 
   .editor-panel,
   .preview-panel {
-    min-height: auto;
+    height: auto;
+    overflow: visible;
   }
 
   .editor-frame {
     min-height: 55vh;
+  }
+
+  .preview-stack {
+    overflow: visible;
+    min-height: auto;
+    padding-right: 0;
   }
 }
