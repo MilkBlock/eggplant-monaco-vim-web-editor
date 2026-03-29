@@ -4,6 +4,11 @@ import { initVimMode } from 'monaco-vim';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
+import {
+  renderTypstSpikeSnippet,
+  spikeSnippets,
+  type TypstSpikeResult,
+} from './typstSpike';
 
 type SampleFile = {
   id: string;
@@ -61,6 +66,8 @@ function countKeywordHits(source: string) {
 export default function App() {
   const [selectedId, setSelectedId] = useState(sampleFiles[0].id);
   const [source, setSource] = useState(sampleFiles[0].source);
+  const [typstResults, setTypstResults] = useState<TypstSpikeResult[]>([]);
+  const [typstStatus, setTypstStatus] = useState('Running typst.ts spike...');
   const statusRef = useRef<HTMLDivElement | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
 
@@ -86,6 +93,37 @@ export default function App() {
     return () => {
       vimModeRef.current?.dispose();
       vimModeRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const runSpike = async () => {
+      setTypstStatus('Running typst.ts spike...');
+      const results = await Promise.all(spikeSnippets.map(renderTypstSpikeSnippet));
+      if (cancelled) {
+        return;
+      }
+      setTypstResults(results);
+      const successCount = results.filter((entry) => entry.mode !== 'failed').length;
+      setTypstStatus(
+        `typst.ts spike: ${successCount}/${results.length} rendered, ${results
+          .map((entry) => `${entry.label} ${entry.elapsedMs.toFixed(0)}ms`)
+          .join(' · ')}`,
+      );
+    };
+
+    runSpike().catch((error) => {
+      if (cancelled) {
+        return;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      setTypstStatus(`typst.ts spike failed: ${message}`);
+    });
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -231,6 +269,32 @@ export default function App() {
                   <span className="token-chip" key={entry.keyword}>
                     {entry.keyword} × {entry.count}
                   </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="preview-card">
+              <h3>typst.ts Spike</h3>
+              <p>{typstStatus}</p>
+              <div className="typst-results">
+                {typstResults.map((result) => (
+                  <div className="typst-result" key={result.id}>
+                    <div className="typst-result-meta">
+                      <strong>{result.label}</strong>
+                      <span>
+                        {result.mode} · {result.elapsedMs.toFixed(0)}ms
+                      </span>
+                    </div>
+                    <code>{result.source}</code>
+                    {result.svg ? (
+                      <div
+                        className="typst-preview"
+                        dangerouslySetInnerHTML={{ __html: result.svg }}
+                      />
+                    ) : (
+                      <p>{result.error}</p>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
