@@ -19,7 +19,7 @@ import {
 } from '@eggplant-shared/previewCore';
 import type { PatternIr } from '@eggplant-vscode/ir';
 import { findRedundantActionInsertChecks } from '@eggplant-vscode/ruleChecks';
-import type { RenderedTypstSnippet } from '@eggplant-shared/typstCore';
+import { displayTextFallbackSource, type RenderedTypstSnippet } from '@eggplant-shared/typstCore';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
@@ -121,6 +121,22 @@ function describeConstraintScope(
     return 'Pick a node to scope constraints.';
   }
   return `Scoped to ${activeState.constraintFilterNodeId}`;
+}
+
+function renderTypstPreview(
+  targetId: string,
+  fallbackSource: string,
+  typstRenderings: Record<string, RenderedTypstSnippet>,
+  typstStatusByTargetId: Record<string, string>,
+) {
+  const typst = typstRenderings[targetId];
+  if (!typst) {
+    return <div className="status-pill">{typstStatusByTargetId[targetId] ?? 'Typst: no source'}</div>;
+  }
+  if (typst.mode === 'text-fallback') {
+    return <pre className="typst-fallback-text">{displayTextFallbackSource(fallbackSource)}</pre>;
+  }
+  return <div className="typst-preview compact" dangerouslySetInnerHTML={{ __html: typst.svg }} />;
 }
 
 export default function App() {
@@ -647,7 +663,6 @@ export default function App() {
                   const isHighlighted = previewState.highlightedPatternNodeIds.includes(node.id);
                   const isConstraintActive = previewState.activeConstraintNodeIds.includes(node.id);
                   const count = constraintCounts[node.id] ?? 0;
-                  const typst = typstRenderings[node.id];
                   return (
                     <div
                       className={
@@ -666,24 +681,19 @@ export default function App() {
                           Drill down
                         </button>
                       </div>
-                      {typst ? (
-                        <>
-                          <div
-                            className="typst-preview compact"
-                            dangerouslySetInnerHTML={{ __html: typst.svg }}
-                          />
-                          <code className="typst-source">{fixture.typstSources[node.id] ?? node.label}</code>
-                        </>
-                      ) : (
-                        <div className="status-pill">{typstStatusByTargetId[node.id] ?? 'Typst: no source'}</div>
+                      {renderTypstPreview(
+                        node.id,
+                        fixture.typstSources[node.id] ?? node.label,
+                        typstRenderings,
+                        typstStatusByTargetId,
                       )}
+                      <code className="typst-source">{fixture.typstSources[node.id] ?? node.label}</code>
                     </div>
                   );
                 })}
                 {fixture.ir.action_effects.map((effect) => {
                   const targetId = `effect:${effect.id}`;
                   const isHighlighted = previewState.highlightedActionEffectIds.includes(targetId);
-                  const typst = typstRenderings[targetId];
                   return (
                     <div className={isHighlighted ? 'target-card highlighted action' : 'target-card action'} key={effect.id}>
                       <div className="target-meta">
@@ -692,23 +702,18 @@ export default function App() {
                       </div>
                       <p>{effect.source_text}</p>
                       <small>{typstStatusByTargetId[targetId] ?? 'Typst: no source'}</small>
-                      {typst ? (
-                        <>
-                          <div
-                            className="typst-preview compact"
-                            dangerouslySetInnerHTML={{ __html: typst.svg }}
-                          />
-                          <code className="typst-source">
-                            {fixture.typstSources[targetId] ?? effect.source_text}
-                          </code>
-                        </>
-                      ) : null}
+                      {renderTypstPreview(
+                        targetId,
+                        fixture.typstSources[targetId] ?? effect.source_text,
+                        typstRenderings,
+                        typstStatusByTargetId,
+                      )}
+                      <code className="typst-source">{fixture.typstSources[targetId] ?? effect.source_text}</code>
                     </div>
                   );
                 })}
                 {fixture.ir.seed_facts.map((seed) => {
                   const targetId = `seed:${seed.id}`;
-                  const typst = typstRenderings[targetId];
                   return (
                     <div className="target-card seed" key={seed.id}>
                       <div className="target-meta">
@@ -717,15 +722,13 @@ export default function App() {
                       </div>
                       <p>{seed.source_text}</p>
                       <small>{typstStatusByTargetId[targetId] ?? 'Typst: no source'}</small>
-                      {typst ? (
-                        <>
-                          <div
-                            className="typst-preview compact"
-                            dangerouslySetInnerHTML={{ __html: typst.svg }}
-                          />
-                          <code className="typst-source">{fixture.typstSources[targetId] ?? seed.source_text}</code>
-                        </>
-                      ) : null}
+                      {renderTypstPreview(
+                        targetId,
+                        fixture.typstSources[targetId] ?? seed.source_text,
+                        typstRenderings,
+                        typstStatusByTargetId,
+                      )}
+                      <code className="typst-source">{fixture.typstSources[targetId] ?? seed.source_text}</code>
                     </div>
                   );
                 })}

@@ -481,6 +481,19 @@ select {
   padding: 6px;
 }
 
+.typst-fallback-text {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.98);
+  color: #0f1720;
+  font-family: "JetBrains Mono", Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .typst-source {
   display: block;
   margin-top: 6px;
