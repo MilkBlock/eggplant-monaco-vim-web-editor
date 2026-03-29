@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import { initVimMode } from 'monaco-vim';
 import {
@@ -495,6 +495,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const hideFloatingUi = () => {
+      setGraphContextMenu(closedGraphContextMenu);
+      setTypstEditorTargetId('');
+      setTypstEditorValue('');
+    };
+
+    window.addEventListener('click', hideFloatingUi);
+    window.addEventListener('resize', hideFloatingUi);
+    window.addEventListener('scroll', hideFloatingUi, true);
+    return () => {
+      window.removeEventListener('click', hideFloatingUi);
+      window.removeEventListener('resize', hideFloatingUi);
+      window.removeEventListener('scroll', hideFloatingUi, true);
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const entries = Object.entries(fixture.typstSources).map(([targetId, sourceText]) => ({
       targetId,
@@ -586,6 +603,145 @@ export default function App() {
     setInteractionState(nextState);
   };
 
+  const handleGraphClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const targetId = findGraphNodeTargetId(event.target);
+    if (!targetId) {
+      return;
+    }
+    handleNodeDrilldown(targetId);
+    setGraphContextMenu(closedGraphContextMenu);
+  };
+
+  const handleGraphContextMenu = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const targetId = findGraphNodeTargetId(event.target);
+    event.preventDefault();
+    event.stopPropagation();
+    const nodeConstraints = targetId
+      ? visibleConstraintPool.filter((constraint) => constraint.referencedNodeIds.includes(targetId))
+      : [];
+    setGraphContextMenu({
+      open: true,
+      x: event.clientX,
+      y: event.clientY,
+      targetId,
+      typstSource: targetId ? fixture.typstSources[targetId] ?? '' : '',
+      typstStatus: targetId ? typstStatusByTargetId[targetId] ?? 'Typst: no source' : 'Typst: no source',
+      nodeConstraints,
+    });
+    setTypstEditorTargetId('');
+    setTypstEditorValue('');
+  };
+
+  const handleRefresh = () => {
+    setClipboardStatus('Refreshing extractor, typst, and graph layout...');
+    setGraphContextMenu(closedGraphContextMenu);
+    setRefreshNonce((value) => value + 1);
+  };
+
+  const handleCopyText = async (text: string, label: string) => {
+    if (!text) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setClipboardStatus(`${label} copied to clipboard.`);
+      setGraphContextMenu(closedGraphContextMenu);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setClipboardStatus(`Failed to copy ${label}: ${message}`);
+    }
+  };
+
+  const handleShowNodeConstraints = () => {
+    if (!graphContextMenu.targetId) {
+      return;
+    }
+    handleNodeDrilldown(graphContextMenu.targetId);
+    setInteractionState((currentState) => setConstraintFilterMode(currentState, 'node-specific'));
+    setGraphContextMenu(closedGraphContextMenu);
+  };
+
+  const openTypstEditor = () => {
+    if (!graphContextMenu.targetId) {
+      return;
+    }
+    setTypstEditorTargetId(graphContextMenu.targetId);
+    setTypstEditorValue(graphContextMenu.typstSource);
+    setGraphContextMenu(closedGraphContextMenu);
+  };
+
+  const handleSaveTypstOverride = () => {
+    if (!typstEditorTargetId) {
+      return;
+    }
+    const nextValue = typstEditorValue.trim();
+    setTypstOverrides((current) => {
+      const next = { ...current };
+      if (nextValue.length === 0) {
+        delete next[typstEditorTargetId];
+      } else {
+        next[typstEditorTargetId] = nextValue;
+      }
+      return next;
+    });
+    setClipboardStatus(
+      nextValue.length === 0
+        ? `Cleared browser typst override for ${typstEditorTargetId}.`
+        : `Saved browser typst override for ${typstEditorTargetId}.`,
+    );
+    setTypstEditorTargetId('');
+    setTypstEditorValue('');
+  };
+
+  useEffect(() => {
+    if (!graphContextMenu.open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Node)) {
+        setGraphContextMenu(closedGraphContextMenu);
+        return;
+      }
+      if (
+        event.target instanceof Element &&
+        (event.target.closest('.graph-context-menu') || event.target.closest('.typst-override-panel'))
+      ) {
+        return;
+      }
+      if (graphPreviewRef.current?.contains(event.target)) {
+        return;
+      }
+      setGraphContextMenu(closedGraphContextMenu);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setGraphContextMenu(closedGraphContextMenu);
+        setTypstEditorTargetId('');
+        setTypstEditorValue('');
+      }
+    };
+    const handleScroll = () => {
+      setGraphContextMenu(closedGraphContextMenu);
+    };
+    const handleResize = () => {
+      setGraphContextMenu(closedGraphContextMenu);
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    window.addEventListener('keydown', handleEscape);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+      window.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [graphContextMenu.open]);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -635,6 +791,7 @@ export default function App() {
             <h2>Rule Sync</h2>
           </div>
           <p className="subtle">{ruleSyncStatus}</p>
+          {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
         </div>
       </aside>
 
@@ -713,12 +870,137 @@ export default function App() {
             <div className="preview-card">
               <div className="panel-header">
                 <h3>Graph Snapshot</h3>
-                <span>{graphLayoutStatus}</span>
+                <div className="graph-toolbar">
+                  <div className="button-row">
+                    {dotViewModes.map((mode) => (
+                      <button
+                        key={mode}
+                        className={dotViewMode === mode ? 'action-button active' : 'action-button'}
+                        onClick={() => setDotViewMode(mode)}
+                        type="button"
+                      >
+                        {modeLabel(mode)}
+                      </button>
+                    ))}
+                  </div>
+                  <button className="action-button" onClick={handleRefresh} type="button">
+                    Refresh
+                  </button>
+                </div>
               </div>
+              <p className="subtle">{graphLayoutStatus}</p>
               <div
                 className="graph-preview"
+                onClick={handleGraphClick}
+                onContextMenu={handleGraphContextMenu}
+                ref={graphPreviewRef}
                 dangerouslySetInnerHTML={{ __html: graphSvg }}
               />
+              {graphContextMenu.open ? (
+                <div
+                  className="graph-context-menu"
+                  onClick={(event) => event.stopPropagation()}
+                  style={{ left: `${graphContextMenu.x}px`, top: `${graphContextMenu.y}px` }}
+                >
+                  <div className="graph-context-heading">
+                    <strong>{graphContextMenu.targetId || 'Graph snapshot'}</strong>
+                    <span>{graphContextMenu.typstStatus}</span>
+                  </div>
+                  <div className="button-row graph-context-actions">
+                    {dotViewModes.map((mode) => (
+                      <button
+                        key={`ctx-${mode}`}
+                        className={dotViewMode === mode ? 'action-button active' : 'action-button'}
+                        onClick={() => {
+                          setDotViewMode(mode);
+                          setGraphContextMenu(closedGraphContextMenu);
+                        }}
+                        type="button"
+                      >
+                        {modeLabel(mode)}
+                      </button>
+                    ))}
+                  </div>
+                  <button className="menu-button" onClick={() => void handleCopyText(previewState.dot, 'DOT')} type="button">
+                    Copy DOT
+                  </button>
+                  {graphContextMenu.typstSource ? (
+                    <button
+                      className="menu-button"
+                      onClick={() => void handleCopyText(graphContextMenu.typstSource, 'Typst')}
+                      type="button"
+                    >
+                      Copy Typst
+                    </button>
+                  ) : null}
+                  <button className="menu-button" onClick={() => setInteractionState(toggleRuleCheckView(activeState))} type="button">
+                    {activeState.ruleCheckViewVisible ? 'Hide Check' : 'Check'}
+                  </button>
+                  <button className="menu-button" onClick={handleRefresh} type="button">
+                    Refresh
+                  </button>
+                  <button
+                    className="menu-button"
+                    disabled={!graphContextMenu.targetId || graphContextMenu.nodeConstraints.length === 0}
+                    onClick={handleShowNodeConstraints}
+                    type="button"
+                  >
+                    Show Constraints
+                  </button>
+                  <button
+                    className="menu-button"
+                    disabled={!graphContextMenu.typstSource}
+                    onClick={openTypstEditor}
+                    type="button"
+                  >
+                    Edit Typst
+                  </button>
+                </div>
+              ) : null}
+              {typstEditorTargetId ? (
+                <div className="typst-override-panel" onClick={(event) => event.stopPropagation()}>
+                  <div className="panel-header">
+                    <h3>Typst Override</h3>
+                    <span>{typstEditorTargetId}</span>
+                  </div>
+                  <textarea
+                    className="typst-override-input"
+                    onChange={(event) => setTypstEditorValue(event.target.value)}
+                    rows={4}
+                    value={typstEditorValue}
+                  />
+                  <div className="button-row">
+                    <button className="action-button active" onClick={handleSaveTypstOverride} type="button">
+                      Save override
+                    </button>
+                    <button
+                      className="action-button"
+                      onClick={() => {
+                        setTypstOverrides((current) => {
+                          const next = { ...current };
+                          delete next[typstEditorTargetId];
+                          return next;
+                        });
+                        setTypstEditorTargetId('');
+                        setTypstEditorValue('');
+                      }}
+                      type="button"
+                    >
+                      Clear override
+                    </button>
+                    <button
+                      className="action-button"
+                      onClick={() => {
+                        setTypstEditorTargetId('');
+                        setTypstEditorValue('');
+                      }}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <p className="subtle">{typstStatus}</p>
             </div>
 
