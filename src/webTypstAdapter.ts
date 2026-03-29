@@ -6,32 +6,56 @@ import compilerWasmUrl from '@myriaddreamin/typst-ts-web-compiler/wasm?url';
 import {
   RenderedTypstSnippet,
   TypstSnippetRenderer,
-  renderTypstSnippetsWithRenderer,
+  renderTypstSnippetWithRenderer,
 } from '@eggplant-shared/typstCore';
 
-const renderCache = new Map<string, Promise<RenderedTypstSnippet | null>>();
+const successfulRenderCache = new Map<string, RenderedTypstSnippet>();
+const inFlightRenderCache = new Map<string, Promise<RenderedTypstSnippet | null>>();
 let wasmImporterConfigured = false;
+const RENDER_TIMEOUT_MS = 15000;
+
+function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${RENDER_TIMEOUT_MS}ms`));
+    }, RENDER_TIMEOUT_MS);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 const webTypstRenderer: TypstSnippetRenderer = {
   async render(document: string): Promise<string> {
     ensureWasmImporter();
-    return $typst.svg({
-      mainContent: document,
-    });
+    return withTimeout(
+      $typst.svg({
+        mainContent: document,
+      }),
+      'typst render',
+    );
   },
 };
 
 export async function renderWebTypstSnippets(
   sources: Array<{ targetId: string; source: string }>,
 ): Promise<Record<string, RenderedTypstSnippet>> {
-  return renderTypstSnippetsWithRenderer(
-    sources,
-    webTypstRenderer,
-    renderCache,
-    (error) => {
-      console.warn('Eggplant web typst render failed', error);
-    },
-  );
+  const result: Record<string, RenderedTypstSnippet> = {};
+  for (const { targetId, source } of sources) {
+    const rendered = await renderTypstSource(source);
+    if (rendered) {
+      result[targetId] = rendered;
+    }
+  }
+  return result;
 }
 
 function ensureWasmImporter(): void {
@@ -52,4 +76,32 @@ function ensureWasmImporter(): void {
   setRendererWasmModule(importWasmModule);
   setCompilerWasmModule(importWasmModule);
   wasmImporterConfigured = true;
+}
+
+async function renderTypstSource(source: string): Promise<RenderedTypstSnippet | null> {
+  const cached = successfulRenderCache.get(source);
+  if (cached) {
+    return cached;
+  }
+
+  const inFlight = inFlightRenderCache.get(source);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const promise = renderTypstSnippetWithRenderer(source, webTypstRenderer)
+    .then((rendered) => {
+      successfulRenderCache.set(source, rendered);
+      return rendered;
+    })
+    .catch((error) => {
+      console.warn('Eggplant web typst render failed', error);
+      return null;
+    })
+    .finally(() => {
+      inFlightRenderCache.delete(source);
+    });
+
+  inFlightRenderCache.set(source, promise);
+  return promise;
 }

@@ -220,7 +220,8 @@ function applyNodeRenderings(
   root: SVGElement,
   typstRenderings: Record<string, RenderedTypstSnippet>,
   typstSources: Record<string, string>,
-): void {
+): number {
+  let overlayCount = 0;
   for (const nodeGroup of Array.from(root.querySelectorAll('g.node'))) {
     const title = nodeGroup.querySelector('title')?.textContent ?? '';
     for (const imageNode of Array.from(nodeGroup.children).filter(
@@ -254,7 +255,9 @@ function applyNodeRenderings(
       textNode.remove();
     }
     nodeGroup.appendChild(overlay);
+    overlayCount += 1;
   }
+  return overlayCount;
 }
 
 function sanitizeGraphvizText(root: SVGElement): void {
