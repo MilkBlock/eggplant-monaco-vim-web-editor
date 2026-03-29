@@ -78,6 +78,23 @@ function scopeLabelFromIr(ir: PatternIr): string {
   return `${kind} @ ${text_range.start}-${text_range.end}`;
 }
 
+function isEmptyRuleScope(ir: PatternIr): boolean {
+  return ir.nodes.length === 0 && ir.action_effects.length === 0 && ir.seed_facts.length === 0;
+}
+
+function findFirstRuleCallOffset(source: string): number | null {
+  const ruleCallPattern = /(?:\b[A-Za-z_][A-Za-z0-9_]*::|\b[A-Za-z_][A-Za-z0-9_]*\.)add_rule(?:_with_hook)?\s*\(/g;
+  const match = ruleCallPattern.exec(source);
+  if (!match || typeof match.index !== 'number') {
+    return null;
+  }
+  const callOffset = match[0].search(/add_rule(?:_with_hook)?\s*\(/);
+  if (callOffset < 0) {
+    return null;
+  }
+  return match.index + callOffset;
+}
+
 function deriveTypstStatusByTargetId(
   typstSources: Record<string, string>,
   typstRenderings: Record<string, RenderedTypstSnippet>,
@@ -271,13 +288,34 @@ export default function App() {
       void (async () => {
         try {
           setRuleSyncStatus(`Extracting rule scope at byte offset ${cursorByteOffset}...`);
-          const ir = await extractPatternIr(source, cursorByteOffset);
+          let ir = await extractPatternIr(source, cursorByteOffset);
+          let usedFallbackOffset: number | null = null;
+          if (isEmptyRuleScope(ir)) {
+            const fallbackOffset = findFirstRuleCallOffset(source);
+            if (fallbackOffset !== null && fallbackOffset !== cursorByteOffset) {
+              try {
+                const fallbackIr = await extractPatternIr(source, fallbackOffset);
+                if (!isEmptyRuleScope(fallbackIr)) {
+                  ir = fallbackIr;
+                  usedFallbackOffset = fallbackOffset;
+                }
+              } catch {
+                // Keep original extraction result when fallback scope lookup fails.
+              }
+            }
+          }
           if (cancelled) {
             return;
           }
           const label = scopeLabelFromIr(ir);
           setActiveRuleScope({ label, ir, source: 'extractor' });
-          setRuleSyncStatus(`Cursor bound to ${label} (byte offset ${cursorByteOffset}).`);
+          if (usedFallbackOffset !== null) {
+            setRuleSyncStatus(
+              `Cursor scope was empty; using first rule at ${label} (fallback byte offset ${usedFallbackOffset}).`,
+            );
+          } else {
+            setRuleSyncStatus(`Cursor bound to ${label} (byte offset ${cursorByteOffset}).`);
+          }
         } catch (error) {
           if (cancelled) {
             return;
