@@ -62,15 +62,11 @@ function parsePathBounds(pathData: string): NodeBounds | null {
     return null;
   }
 
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
   return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
+    x: Math.min(...xs),
+    y: Math.min(...ys),
+    width: Math.max(...xs) - Math.min(...xs),
+    height: Math.max(...ys) - Math.min(...ys),
   };
 }
 
@@ -208,6 +204,12 @@ function setFallbackNodeText(textNodes: SVGTextElement[], source: string): void 
   });
 }
 
+function collectNodeTextNodes(nodeGroup: Element): SVGTextElement[] {
+  return Array.from(nodeGroup.querySelectorAll(':scope > text')).filter(
+    (node): node is SVGTextElement => node instanceof SVGTextElement,
+  );
+}
+
 function applyNodeRenderings(
   root: SVGElement,
   typstRenderings: Record<string, RenderedTypstSnippet>,
@@ -215,9 +217,11 @@ function applyNodeRenderings(
 ): void {
   for (const nodeGroup of Array.from(root.querySelectorAll('g.node'))) {
     const title = nodeGroup.querySelector('title')?.textContent ?? '';
-    const textNodes = Array.from(nodeGroup.querySelectorAll(':scope > text')).filter(
-      (node): node is SVGTextElement => node instanceof SVGTextElement,
-    );
+    for (const imageNode of Array.from(nodeGroup.querySelectorAll(':scope > image'))) {
+      imageNode.remove();
+    }
+
+    const textNodes = collectNodeTextNodes(nodeGroup);
     if (textNodes.length === 0) {
       continue;
     }
@@ -266,6 +270,7 @@ export async function renderDotToSvg(
     format: 'svg',
     engine: 'dot',
   });
+
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgMarkup, 'image/svg+xml');
   const root = doc.documentElement as unknown as SVGElement;
