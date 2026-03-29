@@ -19,7 +19,11 @@ import {
 } from '@eggplant-shared/previewCore';
 import type { PatternIr } from '@eggplant-vscode/ir';
 import { findRedundantActionInsertChecks } from '@eggplant-vscode/ruleChecks';
-import { displayTextFallbackSource, type RenderedTypstSnippet } from '@eggplant-shared/typstCore';
+import {
+  displayTextFallbackSource,
+  normalizeTypstMathSource,
+  type RenderedTypstSnippet,
+} from '@eggplant-shared/typstCore';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
@@ -148,7 +152,11 @@ function renderTypstPreview(
     return <div className="status-pill">{typstStatusByTargetId[targetId] ?? 'Typst: no source'}</div>;
   }
   if (typst.mode === 'text-fallback') {
-    return <pre className="typst-fallback-text">{displayTextFallbackSource(fallbackSource)}</pre>;
+    return (
+      <pre className="typst-fallback-text">
+        {displayTextFallbackSource(normalizeTypstMathSource(fallbackSource))}
+      </pre>
+    );
   }
   return (
     <div className="typst-preview compact">
@@ -161,13 +169,6 @@ function renderTypstPreview(
       />
     </div>
   );
-}
-
-function shouldShowTypstSource(
-  targetId: string,
-  typstRenderings: Record<string, RenderedTypstSnippet>,
-): boolean {
-  return typstRenderings[targetId]?.mode === 'text-fallback';
 }
 
 export default function App() {
@@ -289,7 +290,7 @@ export default function App() {
 
     const runLayout = async () => {
       try {
-        const svg = await renderDotToSvg(previewState.dot);
+        const svg = await renderDotToSvg(previewState.dot, typstRenderings);
         if (cancelled) {
           return;
         }
@@ -319,7 +320,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture.svg, previewState.dot]);
+  }, [fixture.svg, previewState.dot, typstRenderings]);
 
   useEffect(() => {
     setSource(selectedFile.source);
@@ -718,9 +719,6 @@ export default function App() {
                         typstRenderings,
                         typstStatusByTargetId,
                       )}
-                      {shouldShowTypstSource(node.id, typstRenderings) ? (
-                        <code className="typst-source">{fixture.typstSources[node.id] ?? node.label}</code>
-                      ) : null}
                     </div>
                   );
                 })}
@@ -741,9 +739,6 @@ export default function App() {
                         typstRenderings,
                         typstStatusByTargetId,
                       )}
-                      {shouldShowTypstSource(targetId, typstRenderings) ? (
-                        <code className="typst-source">{fixture.typstSources[targetId] ?? effect.source_text}</code>
-                      ) : null}
                     </div>
                   );
                 })}
@@ -763,9 +758,6 @@ export default function App() {
                         typstRenderings,
                         typstStatusByTargetId,
                       )}
-                      {shouldShowTypstSource(targetId, typstRenderings) ? (
-                        <code className="typst-source">{fixture.typstSources[targetId] ?? seed.source_text}</code>
-                      ) : null}
                     </div>
                   );
                 })}
