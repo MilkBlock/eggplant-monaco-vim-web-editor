@@ -26,28 +26,48 @@ function parseSvgDimension(svgMarkup: string, attr: 'width' | 'height'): number 
   return match ? Number(match[1]) : 0;
 }
 
-let liveTypstObjectUrls: string[] = [];
-
-function resetTypstObjectUrls(): void {
-  for (const url of liveTypstObjectUrls) {
-    URL.revokeObjectURL(url);
-  }
-  liveTypstObjectUrls = [];
-}
-
-function createTypstObjectUrl(svgMarkup: string): string {
-  const blob = new Blob([svgMarkup], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  liveTypstObjectUrls.push(url);
-  return url;
-}
-
 function findNodeShape(nodeGroup: Element): SVGGraphicsElement | null {
   return (
     (Array.from(nodeGroup.children).find((child) => {
       return child.tagName !== 'title' && child.tagName !== 'text' && child.tagName !== 'image' && child.tagName !== 'svg';
     }) as SVGGraphicsElement | undefined) ?? null
   );
+}
+
+function createInlineTypstSvg(
+  doc: XMLDocument,
+  renderedSvgMarkup: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): SVGElement | null {
+  const renderedDoc = new DOMParser().parseFromString(renderedSvgMarkup, 'image/svg+xml');
+  const renderedRoot = renderedDoc.documentElement;
+  if (!renderedRoot || renderedRoot.tagName.toLowerCase() !== 'svg') {
+    return null;
+  }
+
+  const nestedSvg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  nestedSvg.setAttribute('x', String(x));
+  nestedSvg.setAttribute('y', String(y));
+  nestedSvg.setAttribute('width', String(width));
+  nestedSvg.setAttribute('height', String(height));
+  nestedSvg.setAttribute('overflow', 'visible');
+  nestedSvg.setAttribute('pointer-events', 'none');
+  nestedSvg.setAttribute('data-typst-rendering', 'true');
+
+  const viewBox = renderedRoot.getAttribute('viewBox');
+  if (viewBox) {
+    nestedSvg.setAttribute('viewBox', viewBox);
+    nestedSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  }
+
+  for (const child of Array.from(renderedRoot.childNodes)) {
+    nestedSvg.appendChild(doc.importNode(child, true));
+  }
+
+  return nestedSvg;
 }
 
 function applyTypstRenderingsToSvg(
@@ -118,15 +138,17 @@ function applyTypstRenderingsToSvg(
       const width = formulaWidth * scale;
       const height = formulaHeight * scale;
       const contentTop = bbox.y + (bbox.height - (height + annotationBlockHeight)) / 2;
-      const image = root.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'image');
-      image.setAttribute('href', createTypstObjectUrl(rendered.svg));
-      image.setAttribute('x', String(bbox.x + (bbox.width - width) / 2));
-      image.setAttribute('y', String(contentTop));
-      image.setAttribute('width', String(width));
-      image.setAttribute('height', String(height));
-      image.setAttribute('data-typst-rendering', 'true');
-      image.setAttribute('pointer-events', 'none');
-      image.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      const inlineSvg = createInlineTypstSvg(
+        root.ownerDocument,
+        rendered.svg,
+        bbox.x + (bbox.width - width) / 2,
+        contentTop,
+        width,
+        height,
+      );
+      if (!inlineSvg) {
+        continue;
+      }
 
       const annotationOverlay = root.ownerDocument.createElementNS('http://www.w3.org/2000/svg', 'g');
       annotationOverlay.setAttribute('data-typst-annotation-overlay', 'true');
@@ -149,7 +171,7 @@ function applyTypstRenderingsToSvg(
       for (const textNode of textNodes) {
         textNode.remove();
       }
-      nodeGroup.appendChild(image);
+      nodeGroup.appendChild(inlineSvg);
       if (annotationLines.length > 0) {
         nodeGroup.appendChild(annotationOverlay);
       }
@@ -164,7 +186,6 @@ export async function renderDotToSvg(
   typstRenderings: Record<string, RenderedTypstSnippet> = {},
   typstSources: Record<string, string> = {},
 ): Promise<string> {
-  resetTypstObjectUrls();
   const renderer = await viz();
   const svgMarkup = renderer.renderString(dot, {
     format: 'svg',
