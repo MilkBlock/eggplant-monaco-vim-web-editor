@@ -9,6 +9,7 @@ import {
   collectSourceTargetIds,
   createDefaultPreviewInteractionState,
   drilldownConstraintNode,
+  modeLabel,
   projectPreviewInteractionState,
   selectConstraint,
   selectRuleCheck,
@@ -64,6 +65,27 @@ const sampleFiles: SampleFile[] = [
 
 const rustKeywords = ['fn', 'struct', 'enum', 'impl', 'let', 'pub', 'use', 'mod', 'match', 'if', 'else', 'return'];
 const utf8Encoder = new TextEncoder();
+const dotViewModes: DotViewMode[] = ['pattern', 'action', 'combined'];
+
+type GraphContextMenuState = {
+  open: boolean;
+  x: number;
+  y: number;
+  targetId: string;
+  typstSource: string;
+  typstStatus: string;
+  nodeConstraints: PreviewConstraintEntry[];
+};
+
+const closedGraphContextMenu: GraphContextMenuState = {
+  open: false,
+  x: 0,
+  y: 0,
+  targetId: '',
+  typstSource: '',
+  typstStatus: 'Typst: no source',
+  nodeConstraints: [],
+};
 
 function countKeywordHits(source: string) {
   return rustKeywords
@@ -165,6 +187,14 @@ function mergeTypstSources(
   return merged;
 }
 
+function findGraphNodeTargetId(target: EventTarget | null): string {
+  if (!(target instanceof Element)) {
+    return '';
+  }
+  const nodeGroup = target.closest('g.node');
+  return nodeGroup?.querySelector('title')?.textContent?.trim() ?? '';
+}
+
 function renderTypstPreview(
   targetId: string,
   fallbackSource: string,
@@ -204,7 +234,13 @@ export default function App() {
   const [typstRenderings, setTypstRenderings] = useState<Record<string, RenderedTypstSnippet>>({});
   const [typstOverrides, setTypstOverrides] = useState<Record<string, string>>({});
   const [typstStatus, setTypstStatus] = useState('Waiting to render shared typst targets...');
+  const [clipboardStatus, setClipboardStatus] = useState('');
+  const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
+  const [typstEditorTargetId, setTypstEditorTargetId] = useState('');
+  const [typstEditorValue, setTypstEditorValue] = useState('');
+  const [refreshNonce, setRefreshNonce] = useState(0);
   const statusRef = useRef<HTMLDivElement | null>(null);
+  const graphPreviewRef = useRef<HTMLDivElement | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
   const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
 
@@ -366,7 +402,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture.svg, previewState.dot, typstRenderings]);
+  }, [fixture.svg, previewState.dot, refreshNonce, typstRenderings]);
 
   useEffect(() => {
     setSource(selectedFile.source);
@@ -376,6 +412,10 @@ export default function App() {
     setRuleSyncStatus('Waiting for extractor...');
     setInteractionState(createDefaultPreviewInteractionState());
     setTypstOverrides({});
+    setGraphContextMenu(closedGraphContextMenu);
+    setTypstEditorTargetId('');
+    setTypstEditorValue('');
+    setClipboardStatus('');
   }, [selectedFile]);
 
   useEffect(() => {
@@ -443,7 +483,7 @@ export default function App() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [cursorByteOffset, selectedFile, source]);
+  }, [cursorByteOffset, refreshNonce, selectedFile, source]);
 
   useEffect(() => {
     return () => {
@@ -527,7 +567,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture]);
+  }, [fixture, refreshNonce]);
 
   const handleMount: OnMount = (editor) => {
     if (statusRef.current) {
