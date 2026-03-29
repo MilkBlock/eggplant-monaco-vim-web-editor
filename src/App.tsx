@@ -22,7 +22,8 @@ import type { RenderedTypstSnippet } from '@eggplant-shared/typstCore';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
-import { webPreviewFixtures } from './webPreviewFixtures';
+import { buildFixtureFromScope, webPreviewFixtures } from './webPreviewFixtures';
+import { pickRuleScopeByByteOffset } from './webRuleScopes';
 
 type SampleFile = {
   id: string;
@@ -53,6 +54,7 @@ const sampleFiles: SampleFile[] = [
 ];
 
 const rustKeywords = ['fn', 'struct', 'enum', 'impl', 'let', 'pub', 'use', 'mod', 'match', 'if', 'else', 'return'];
+const utf8Encoder = new TextEncoder();
 
 function countKeywordHits(source: string) {
   return rustKeywords
@@ -62,6 +64,11 @@ function countKeywordHits(source: string) {
     }))
     .filter((entry) => entry.count > 0)
     .sort((left, right) => right.count - left.count);
+}
+
+function utf16OffsetToUtf8ByteOffset(source: string, utf16Offset: number): number {
+  const clampedOffset = Math.max(0, Math.min(source.length, utf16Offset));
+  return utf8Encoder.encode(source.slice(0, clampedOffset)).length;
 }
 
 function deriveTypstStatusByTargetId(
@@ -98,16 +105,40 @@ export default function App() {
   const [interactionState, setInteractionState] = useState<PreviewInteractionState>(
     createDefaultPreviewInteractionState(),
   );
+  const [cursorUtf16Offset, setCursorUtf16Offset] = useState(0);
   const [typstRenderings, setTypstRenderings] = useState<Record<string, RenderedTypstSnippet>>({});
   const [typstStatus, setTypstStatus] = useState('Waiting to render shared typst targets...');
   const statusRef = useRef<HTMLDivElement | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
+  const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
 
   const selectedFile = useMemo(
     () => sampleFiles.find((file) => file.id === selectedId) ?? sampleFiles[0],
     [selectedId],
   );
-  const fixture = webPreviewFixtures[selectedFile.id];
+  const sourceMatchesSample = source === selectedFile.source;
+  const cursorByteOffset = useMemo(
+    () => utf16OffsetToUtf8ByteOffset(source, cursorUtf16Offset),
+    [cursorUtf16Offset, source],
+  );
+  const activeRuleScope = useMemo(() => {
+    if (!sourceMatchesSample) {
+      return null;
+    }
+    return pickRuleScopeByByteOffset(selectedFile.id, cursorByteOffset);
+  }, [cursorByteOffset, selectedFile.id, sourceMatchesSample]);
+  const fixture = useMemo(() => {
+    if (!activeRuleScope) {
+      return webPreviewFixtures[selectedFile.id];
+    }
+    return buildFixtureFromScope(
+      selectedFile.id,
+      selectedFile.label,
+      selectedFile.description,
+      activeRuleScope.label,
+      activeRuleScope.ir,
+    );
+  }, [activeRuleScope, selectedFile]);
 
   const stats = useMemo(() => {
     const lines = source.split('\n');
@@ -179,11 +210,14 @@ export default function App() {
 
   useEffect(() => {
     setSource(selectedFile.source);
+    setCursorUtf16Offset(0);
     setInteractionState(createDefaultPreviewInteractionState());
   }, [selectedFile]);
 
   useEffect(() => {
     return () => {
+      cursorListenerRef.current?.dispose();
+      cursorListenerRef.current = null;
       vimModeRef.current?.dispose();
       vimModeRef.current = null;
     };
@@ -232,11 +266,21 @@ export default function App() {
   }, [fixture]);
 
   const handleMount: OnMount = (editor) => {
-    if (!statusRef.current) {
-      return;
+    if (statusRef.current) {
+      vimModeRef.current?.dispose();
+      vimModeRef.current = initVimMode(editor, statusRef.current);
     }
-    vimModeRef.current?.dispose();
-    vimModeRef.current = initVimMode(editor, statusRef.current);
+    cursorListenerRef.current?.dispose();
+    const model = editor.getModel();
+    if (model) {
+      const initialPosition = editor.getPosition();
+      if (initialPosition) {
+        setCursorUtf16Offset(model.getOffsetAt(initialPosition));
+      }
+      cursorListenerRef.current = editor.onDidChangeCursorPosition((event) => {
+        setCursorUtf16Offset(model.getOffsetAt(event.position));
+      });
+    }
     editor.focus();
   };
 
@@ -297,6 +341,19 @@ export default function App() {
             <li>Rule checks: `@eggplant-vscode/ruleChecks`</li>
             <li>Boundary: shell-only wiring, no contract fork</li>
           </ul>
+        </div>
+
+        <div className="panel">
+          <div className="panel-header">
+            <h2>Rule Sync</h2>
+          </div>
+          <p className="subtle">
+            {sourceMatchesSample
+              ? activeRuleScope
+                ? `Cursor bound to ${activeRuleScope.label} (byte offset ${cursorByteOffset}).`
+                : `No add_rule scope at byte offset ${cursorByteOffset}; showing sample default.`
+              : 'Edited source diverged from bundled sample; rule-to-cursor sync is disabled.'}
+          </p>
         </div>
       </aside>
 

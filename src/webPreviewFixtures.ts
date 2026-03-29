@@ -10,6 +10,12 @@ export type WebPreviewFixture = {
   typstSources: Record<string, string>;
 };
 
+const sampleAccentById: Record<string, string> = {
+  pattern_samples: '#ffbf69',
+  fibonacci_func: '#5eead4',
+  relation: '#7dd3fc',
+};
+
 function buildDemoSvg(title: string, accent: string, nodeLabels: string[]): string {
   const nodes = nodeLabels
     .map(
@@ -30,6 +36,58 @@ function buildDemoSvg(title: string, accent: string, nodeLabels: string[]): stri
       ${nodes}
     </svg>
   `.trim();
+}
+
+function buildDemoDotFromIr(ir: PatternIr): string {
+  const lines = ['digraph EggplantPattern {'];
+  for (const edge of ir.edges) {
+    lines.push(`  "${edge.from}" -> "${edge.to}";`);
+  }
+  for (const effect of ir.action_effects) {
+    lines.push(`  "effect:${effect.id}" [shape=box];`);
+  }
+  for (const fact of ir.seed_facts) {
+    lines.push(`  "seed:${fact.id}" [shape=ellipse];`);
+  }
+  lines.push('}');
+  return lines.join('\n');
+}
+
+function buildTypstSourcesFromIr(ir: PatternIr): Record<string, string> {
+  const byTargetId: Record<string, string> = {};
+  for (const node of ir.nodes) {
+    byTargetId[node.id] = node.label;
+  }
+  for (const effect of ir.action_effects) {
+    byTargetId[`effect:${effect.id}`] = effect.source_text;
+  }
+  for (const seed of ir.seed_facts) {
+    byTargetId[`seed:${seed.id}`] = seed.source_text;
+  }
+  return byTargetId;
+}
+
+export function buildFixtureFromScope(
+  sampleId: string,
+  fileName: string,
+  description: string,
+  ruleLabel: string,
+  ir: PatternIr,
+): WebPreviewFixture {
+  const accent = sampleAccentById[sampleId] ?? '#ffbf69';
+  const labels = ir.nodes.map((node) => node.id).slice(0, 4);
+  const nodeLabels = labels.length > 0
+    ? labels
+    : ir.action_effects.map((effect) => effect.id).slice(0, 3);
+  return {
+    id: sampleId,
+    fileName,
+    description: `${description} Active rule: ${ruleLabel}.`,
+    dot: buildDemoDotFromIr(ir),
+    svg: buildDemoSvg(`${fileName} · ${ruleLabel}`, accent, nodeLabels),
+    ir,
+    typstSources: buildTypstSourcesFromIr(ir),
+  };
 }
 
 export const webPreviewFixtures: Record<string, WebPreviewFixture> = {
