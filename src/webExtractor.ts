@@ -1,7 +1,7 @@
 import type { PatternIr } from '@eggplant-vscode/ir';
 import initExtractor, {
   extract_pattern_json as extractPatternJson,
-} from './vendor/extractor-wasm/eggplant-pattern-extractor';
+} from './vendor/extractor-wasm/eggplant_pattern_extractor';
 
 let extractorInitPromise: Promise<unknown> | null = null;
 

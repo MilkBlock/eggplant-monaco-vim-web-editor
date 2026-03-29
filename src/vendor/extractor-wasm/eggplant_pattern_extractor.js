@@ -1,4 +1,4 @@
-/* @ts-self-types="./eggplant-pattern-extractor.d.ts" */
+/* @ts-self-types="./eggplant_pattern_extractor.d.ts" */
 
 /**
  * @param {string} source
@@ -49,7 +49,7 @@ function __wbg_get_imports() {
     };
     return {
         __proto__: null,
-        "./eggplant-pattern-extractor_bg.js": import0,
+        "./eggplant_pattern_extractor_bg.js": import0,
     };
 }
 
@@ -219,7 +219,7 @@ async function __wbg_init(module_or_path) {
     }
 
     if (module_or_path === undefined) {
-        module_or_path = new URL('eggplant-pattern-extractor_bg.wasm', import.meta.url);
+        module_or_path = new URL('eggplant_pattern_extractor_bg.wasm', import.meta.url);
     }
     const imports = __wbg_get_imports();
 
