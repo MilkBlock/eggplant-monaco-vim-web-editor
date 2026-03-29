@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 const repoName = 'eggplant-monaco-vim-web-editor';
 const pluginSrcRoot = resolve(
   __dirname,
-  '../eggplant_pattern_view_plugin/eggplant-pattern-vscode/src',
+  'vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src',
 );
 
 export default defineConfig({

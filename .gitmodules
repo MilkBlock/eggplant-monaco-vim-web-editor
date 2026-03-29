@@ -1,0 +1,3 @@
+[submodule "vendor/eggplant_pattern_view_plugin"]
+	path = vendor/eggplant_pattern_view_plugin
+	url = https://github.com/MilkBlock/eggplant_pattern_view_plugin.git

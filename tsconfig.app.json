@@ -16,8 +16,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "paths": {
-      "@eggplant-shared/*": ["../eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/shared/*"],
-      "@eggplant-vscode/*": ["../eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/*"]
+      "@eggplant-shared/*": ["vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/shared/*"],
+      "@eggplant-vscode/*": ["vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/*"]
     }
   },
   "include": ["src"]
