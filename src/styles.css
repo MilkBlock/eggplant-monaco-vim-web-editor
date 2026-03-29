@@ -167,6 +167,19 @@ select {
   gap: 12px;
 }
 
+.graph-preview {
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(7, 10, 15, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.graph-preview svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -204,10 +217,208 @@ select {
   font-size: 12px;
 }
 
+.ghost-button,
+.segmented-button,
+.node-chip,
+.check-card {
+  font: inherit;
+  color: inherit;
+}
+
+.ghost-button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.segmented-button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.segmented-button.active,
+.node-chip.active {
+  background: rgba(255, 191, 105, 0.14);
+  border-color: rgba(255, 191, 105, 0.45);
+  color: #ffe4b8;
+}
+
+.check-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.check-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(16, 21, 29, 0.9);
+  padding: 12px;
+  cursor: pointer;
+}
+
+.check-card.active {
+  border-color: rgba(63, 164, 255, 0.45);
+  background: rgba(63, 164, 255, 0.12);
+}
+
+.check-suggestion {
+  color: rgba(244, 241, 232, 0.6);
+  font-size: 12px;
+}
+
+.highlight-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.highlight-chip {
+  background: rgba(255, 191, 105, 0.14);
+  border-color: rgba(255, 191, 105, 0.35);
+  color: #ffe4b8;
+}
+
+.action-chip {
+  background: rgba(255, 111, 145, 0.14);
+  border-color: rgba(255, 111, 145, 0.35);
+  color: #ffd3de;
+}
+
+.node-chip {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+}
+
 .typst-results {
   display: grid;
   gap: 12px;
   margin-top: 12px;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.action-button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+.action-button.active {
+  background: rgba(255, 191, 105, 0.16);
+  border-color: rgba(255, 191, 105, 0.44);
+  color: #ffe2b4;
+}
+
+.list-stack {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.list-card {
+  text-align: left;
+  color: inherit;
+  background: rgba(16, 21, 29, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.list-card.active {
+  border-color: rgba(94, 234, 212, 0.48);
+  background: rgba(94, 234, 212, 0.11);
+}
+
+.list-card span,
+.list-card small,
+.empty-state {
+  color: rgba(244, 241, 232, 0.72);
+}
+
+.target-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.target-card {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(16, 21, 29, 0.92);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.target-card.highlighted {
+  border-color: rgba(255, 191, 105, 0.46);
+  box-shadow: inset 0 0 0 1px rgba(255, 191, 105, 0.14);
+}
+
+.target-card.action {
+  border-color: rgba(125, 211, 252, 0.24);
+}
+
+.target-card.seed {
+  border-color: rgba(94, 234, 212, 0.24);
+}
+
+.target-card p,
+.target-card small {
+  margin: 0;
+  color: rgba(244, 241, 232, 0.74);
+  line-height: 1.5;
+}
+
+.target-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.target-meta span {
+  font-size: 12px;
+  color: rgba(244, 241, 232, 0.58);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.status-pill {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(244, 241, 232, 0.72);
+  font-size: 12px;
 }
 
 .typst-result {
@@ -247,6 +458,10 @@ select {
   display: block;
   max-width: 100%;
   height: auto;
+}
+
+.typst-preview.compact {
+  padding: 6px;
 }
 
 @media (max-width: 1100px) {

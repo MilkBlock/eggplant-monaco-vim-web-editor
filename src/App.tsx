@@ -1,14 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useEffect, useMemo, useRef, useState } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import { initVimMode } from 'monaco-vim';
+import {
+  buildConstraintCountByNodeId,
+  buildConstraintEntries,
+  buildMetadataSourcesView,
+  buildPreviewPanelState,
+  collectSourceTargetIds,
+  createDefaultPreviewInteractionState,
+  drilldownConstraintNode,
+  projectPreviewInteractionState,
+  selectConstraint,
+  selectRuleCheck,
+  setConstraintFilterMode,
+  toggleRuleCheckView,
+  type PreviewConstraintEntry,
+  type PreviewInteractionState,
+} from '@eggplant-shared/previewCore';
+import { findRedundantActionInsertChecks } from '@eggplant-vscode/ruleChecks';
+import type { RenderedTypstSnippet } from '@eggplant-shared/typstCore';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
-import {
-  renderTypstSpikeSnippet,
-  spikeSnippets,
-  type TypstSpikeResult,
-} from './typstSpike';
+import { webPreviewFixtures } from './webPreviewFixtures';
 
 type SampleFile = {
   id: string;
@@ -38,20 +52,7 @@ const sampleFiles: SampleFile[] = [
   },
 ];
 
-const rustKeywords = [
-  'fn',
-  'struct',
-  'enum',
-  'impl',
-  'let',
-  'pub',
-  'use',
-  'mod',
-  'match',
-  'if',
-  'else',
-  'return',
-];
+const rustKeywords = ['fn', 'struct', 'enum', 'impl', 'let', 'pub', 'use', 'mod', 'match', 'if', 'else', 'return'];
 
 function countKeywordHits(source: string) {
   return rustKeywords
@@ -63,11 +64,42 @@ function countKeywordHits(source: string) {
     .sort((left, right) => right.count - left.count);
 }
 
+function deriveTypstStatusByTargetId(
+  typstSources: Record<string, string>,
+  typstRenderings: Record<string, RenderedTypstSnippet>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.keys(typstSources).map((targetId) => {
+      const rendering = typstRenderings[targetId];
+      if (!rendering) {
+        return [targetId, 'Typst: pending'];
+      }
+      return [targetId, rendering.mode === 'math' ? 'Typst: rendered' : 'Typst: fallback text'];
+    }),
+  );
+}
+
+function describeConstraintScope(
+  entry: PreviewConstraintEntry,
+  activeState: PreviewInteractionState,
+): string {
+  if (activeState.constraintFilterMode !== 'node-specific') {
+    return entry.referencedNodeIds.join(', ');
+  }
+  if (!activeState.constraintFilterNodeId) {
+    return 'Pick a node to scope constraints.';
+  }
+  return `Scoped to ${activeState.constraintFilterNodeId}`;
+}
+
 export default function App() {
   const [selectedId, setSelectedId] = useState(sampleFiles[0].id);
   const [source, setSource] = useState(sampleFiles[0].source);
-  const [typstResults, setTypstResults] = useState<TypstSpikeResult[]>([]);
-  const [typstStatus, setTypstStatus] = useState('Running typst.ts spike...');
+  const [interactionState, setInteractionState] = useState<PreviewInteractionState>(
+    createDefaultPreviewInteractionState(),
+  );
+  const [typstRenderings, setTypstRenderings] = useState<Record<string, RenderedTypstSnippet>>({});
+  const [typstStatus, setTypstStatus] = useState('Waiting to render shared typst targets...');
   const statusRef = useRef<HTMLDivElement | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
 
@@ -75,6 +107,7 @@ export default function App() {
     () => sampleFiles.find((file) => file.id === selectedId) ?? sampleFiles[0],
     [selectedId],
   );
+  const fixture = webPreviewFixtures[selectedFile.id];
 
   const stats = useMemo(() => {
     const lines = source.split('\n');
@@ -85,8 +118,68 @@ export default function App() {
     };
   }, [source]);
 
+  const allConstraints = useMemo(
+    () => buildConstraintEntries(fixture.ir, { includeInlineHidden: true }),
+    [fixture],
+  );
+  const visibleConstraintPool = useMemo(() => buildConstraintEntries(fixture.ir), [fixture]);
+  const ruleChecks = useMemo(() => findRedundantActionInsertChecks(fixture.ir), [fixture]);
+  const projection = useMemo(
+    () => projectPreviewInteractionState(interactionState, ruleChecks, visibleConstraintPool),
+    [interactionState, ruleChecks, visibleConstraintPool],
+  );
+  const activeState = projection.state;
+  const typstStatusByTargetId = useMemo(
+    () => deriveTypstStatusByTargetId(fixture.typstSources, typstRenderings),
+    [fixture.typstSources, typstRenderings],
+  );
+  const previewState = useMemo(
+    () =>
+      buildPreviewPanelState({
+        mode: 'combined',
+        sourceMode: 'ast',
+        selectedLabelStyle: 'recursive',
+        effectiveLabelStyle: 'recursive',
+        recursiveStrategy: 'tree-safe',
+        fileName: fixture.fileName,
+        dot: fixture.dot,
+        svg: fixture.svg,
+        typstRenderings,
+        typstSources: fixture.typstSources,
+        typstStatusByTargetId,
+        sourceTargetIds: collectSourceTargetIds(fixture.ir, 'combined'),
+        allConstraints,
+        constraints: visibleConstraintPool,
+        ruleChecks,
+        interactionState: activeState,
+        metadataSourceFiles: [],
+        metadataSourcesView: buildMetadataSourcesView(fixture.fileName, [], []),
+        recoveryMode: 'off',
+        tracePath: '',
+        recoverySummary: null,
+        recoveryDiagnostics: [],
+        sourceWarning: null,
+        showSwitchToAst: false,
+        notice: `${fixture.description} Shared contract imported from the plugin repo.`,
+      }),
+    [
+      activeState,
+      allConstraints,
+      fixture,
+      ruleChecks,
+      typstRenderings,
+      typstStatusByTargetId,
+      visibleConstraintPool,
+    ],
+  );
+  const constraintCounts = useMemo(
+    () => buildConstraintCountByNodeId(visibleConstraintPool),
+    [visibleConstraintPool],
+  );
+
   useEffect(() => {
     setSource(selectedFile.source);
+    setInteractionState(createDefaultPreviewInteractionState());
   }, [selectedFile]);
 
   useEffect(() => {
@@ -98,34 +191,45 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    const entries = Object.entries(fixture.typstSources).map(([targetId, sourceText]) => ({
+      targetId,
+      source: sourceText,
+    }));
+    if (entries.length === 0) {
+      setTypstRenderings({});
+      setTypstStatus('No typst targets in this fixture.');
+      return undefined;
+    }
 
-    const runSpike = async () => {
-      setTypstStatus('Running typst.ts spike...');
-      const results = await Promise.all(spikeSnippets.map(renderTypstSpikeSnippet));
+    const runRender = async () => {
+      setTypstStatus(`Rendering ${entries.length} shared typst target(s) in the browser...`);
+      const startedAt = performance.now();
+      const { renderWebTypstSnippets } = await import('./webTypstAdapter');
+      const renderings = await renderWebTypstSnippets(entries);
       if (cancelled) {
         return;
       }
-      setTypstResults(results);
-      const successCount = results.filter((entry) => entry.mode !== 'failed').length;
+      setTypstRenderings(renderings);
       setTypstStatus(
-        `typst.ts spike: ${successCount}/${results.length} rendered, ${results
-          .map((entry) => `${entry.label} ${entry.elapsedMs.toFixed(0)}ms`)
-          .join(' · ')}`,
+        `Shared typst adapter rendered ${Object.keys(renderings).length}/${entries.length} target(s) in ${(
+          performance.now() - startedAt
+        ).toFixed(0)}ms.`,
       );
     };
 
-    runSpike().catch((error) => {
+    runRender().catch((error) => {
       if (cancelled) {
         return;
       }
       const message = error instanceof Error ? error.message : String(error);
-      setTypstStatus(`typst.ts spike failed: ${message}`);
+      setTypstRenderings({});
+      setTypstStatus(`Shared typst adapter failed: ${message}`);
     });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [fixture]);
 
   const handleMount: OnMount = (editor) => {
     if (!statusRef.current) {
@@ -136,15 +240,30 @@ export default function App() {
     editor.focus();
   };
 
+  const handleSelectSample = (sampleId: string) => {
+    startTransition(() => {
+      setSelectedId(sampleId);
+    });
+  };
+
+  const handleNodeDrilldown = (targetId: string) => {
+    const nextState = drilldownConstraintNode(
+      activeState,
+      targetId,
+      visibleConstraintPool.filter((constraint) => constraint.referencedNodeIds.includes(targetId)),
+    );
+    setInteractionState(nextState);
+  };
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand-block">
           <p className="eyebrow">Eggplant</p>
-          <h1>Pattern Web Editor</h1>
+          <h1>Shared Core Web Shell</h1>
           <p className="subtle">
-            Monaco + Vim mode spike. Static-hostable and seeded with real Rust
-            samples from the plugin repo.
+            Monaco + Vim on the left. On the right, a browser host shell driven by the same
+            preview and typst contracts extracted from the VSCode plugin.
           </p>
         </div>
 
@@ -158,7 +277,7 @@ export default function App() {
               <button
                 key={file.id}
                 className={file.id === selectedId ? 'sample-card active' : 'sample-card'}
-                onClick={() => setSelectedId(file.id)}
+                onClick={() => handleSelectSample(file.id)}
                 type="button"
               >
                 <strong>{file.label}</strong>
@@ -170,13 +289,13 @@ export default function App() {
 
         <div className="panel">
           <div className="panel-header">
-            <h2>Mode</h2>
+            <h2>Shared Contract</h2>
           </div>
           <ul className="fact-list">
-            <li>Editor: Monaco</li>
-            <li>Keybindings: Vim via `monaco-vim`</li>
-            <li>Language: Rust</li>
-            <li>Deploy: GitHub Pages</li>
+            <li>Preview interaction: `@eggplant-shared/previewCore`</li>
+            <li>Typst renderer: browser adapter over `@eggplant-shared/typstCore`</li>
+            <li>Rule checks: `@eggplant-vscode/ruleChecks`</li>
+            <li>Boundary: shell-only wiring, no contract fork</li>
           </ul>
         </div>
       </aside>
@@ -221,80 +340,221 @@ export default function App() {
           <div className="toolbar">
             <div>
               <p className="eyebrow">Preview Workbench</p>
-              <h2>Static Spike</h2>
+              <h2>{previewState.fileName}</h2>
+            </div>
+            <div className="toolbar-meta">
+              <span>{previewState.ruleChecks.length} checks</span>
+              <span>{previewState.constraints.length} visible constraints</span>
             </div>
           </div>
 
           <div className="preview-stack">
             <div className="preview-card">
-              <h3>Current Focus</h3>
-              <p>
-                This deploy proves the browser editor shell: sample switching,
-                Monaco editing, and Vim keybindings. The next layer is wiring
-                the real Eggplant extractor/preview pipeline into this pane.
-              </p>
+              <h3>{previewState.title}</h3>
+              <p>{previewState.notice}</p>
+              <div className="metric-grid">
+                <div>
+                  <span className="metric-label">Nodes</span>
+                  <strong>{fixture.ir.nodes.length}</strong>
+                </div>
+                <div>
+                  <span className="metric-label">Action effects</span>
+                  <strong>{fixture.ir.action_effects.length}</strong>
+                </div>
+                <div>
+                  <span className="metric-label">All constraints</span>
+                  <strong>{previewState.allConstraints.length}</strong>
+                </div>
+                <div>
+                  <span className="metric-label">Tracked targets</span>
+                  <strong>{previewState.sourceTargetIds.length}</strong>
+                </div>
+              </div>
             </div>
 
             <div className="preview-card">
-              <h3>Selected Sample</h3>
-              <p>{selectedFile.description}</p>
+              <div className="panel-header">
+                <h3>Graph Snapshot</h3>
+                <span>{typstStatus}</span>
+              </div>
+              <div
+                className="graph-preview"
+                dangerouslySetInnerHTML={{ __html: previewState.svg }}
+              />
+            </div>
+
+            <div className="preview-card">
+              <div className="panel-header">
+                <h3>Rule Checks</h3>
+                <button
+                  className="action-button"
+                  onClick={() => setInteractionState(toggleRuleCheckView(activeState))}
+                  type="button"
+                >
+                  {activeState.ruleCheckViewVisible ? 'Hide checks' : 'Show checks'}
+                </button>
+              </div>
+              {previewState.ruleChecks.length === 0 ? (
+                <p>No redundant action inserts in this fixture.</p>
+              ) : (
+                <div className="list-stack">
+                  {previewState.ruleChecks.map((check) => (
+                    <button
+                      key={check.id}
+                      className={check.id === activeState.activeRuleCheckId ? 'list-card active' : 'list-card'}
+                      onClick={() => setInteractionState(selectRuleCheck(activeState, check.id))}
+                      type="button"
+                    >
+                      <strong>{check.kind}</strong>
+                      <span>{check.message}</span>
+                      <small>{check.suggestion}</small>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="preview-card">
+              <div className="panel-header">
+                <h3>Constraint View</h3>
+                <div className="button-row">
+                  <button
+                    className={
+                      activeState.constraintFilterMode === 'all' ? 'action-button active' : 'action-button'
+                    }
+                    onClick={() => setInteractionState(setConstraintFilterMode(activeState, 'all'))}
+                    type="button"
+                  >
+                    All
+                  </button>
+                  <button
+                    className={
+                      activeState.constraintFilterMode === 'node-specific'
+                        ? 'action-button active'
+                        : 'action-button'
+                    }
+                    onClick={() => setInteractionState(setConstraintFilterMode(activeState, 'node-specific'))}
+                    type="button"
+                  >
+                    Node-specific
+                  </button>
+                </div>
+              </div>
+              <p className="subtle">
+                {activeState.constraintFilterMode === 'node-specific' && activeState.constraintFilterNodeId
+                  ? `Scoped to node ${activeState.constraintFilterNodeId}.`
+                  : 'Pick a node card to drill down or keep the full shared constraint list visible.'}
+              </p>
+              <div className="list-stack">
+                {projection.visibleConstraints.length === 0 ? (
+                  <p className="empty-state">No constraints visible in the current filter mode.</p>
+                ) : (
+                  projection.visibleConstraints.map((constraint) => (
+                    <button
+                      key={constraint.id}
+                      className={
+                        constraint.id === activeState.activeConstraintId ? 'list-card active' : 'list-card'
+                      }
+                      onClick={() => setInteractionState(selectConstraint(activeState, constraint.id))}
+                      type="button"
+                    >
+                      <strong>{constraint.id}</strong>
+                      <span>{constraint.compactText}</span>
+                      <small>{describeConstraintScope(constraint, activeState)}</small>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="preview-card">
+              <h3>Targets</h3>
+              <div className="target-grid">
+                {fixture.ir.nodes.map((node) => {
+                  const isHighlighted = previewState.highlightedPatternNodeIds.includes(node.id);
+                  const isConstraintActive = previewState.activeConstraintNodeIds.includes(node.id);
+                  const count = constraintCounts[node.id] ?? 0;
+                  const typst = typstRenderings[node.id];
+                  return (
+                    <div
+                      className={
+                        isHighlighted || isConstraintActive ? 'target-card highlighted' : 'target-card'
+                      }
+                      key={node.id}
+                    >
+                      <div className="target-meta">
+                        <strong>{node.id}</strong>
+                        <span>{node.dsl_type}</span>
+                      </div>
+                      <p>{node.label}</p>
+                      <small>{count} constraint(s)</small>
+                      <div className="button-row">
+                        <button className="action-button" onClick={() => handleNodeDrilldown(node.id)} type="button">
+                          Drill down
+                        </button>
+                      </div>
+                      {typst ? (
+                        <div
+                          className="typst-preview compact"
+                          dangerouslySetInnerHTML={{ __html: typst.svg }}
+                        />
+                      ) : (
+                        <div className="status-pill">{typstStatusByTargetId[node.id] ?? 'Typst: no source'}</div>
+                      )}
+                    </div>
+                  );
+                })}
+                {fixture.ir.action_effects.map((effect) => {
+                  const targetId = `effect:${effect.id}`;
+                  const isHighlighted = previewState.highlightedActionEffectIds.includes(targetId);
+                  const typst = typstRenderings[targetId];
+                  return (
+                    <div className={isHighlighted ? 'target-card highlighted action' : 'target-card action'} key={effect.id}>
+                      <div className="target-meta">
+                        <strong>{effect.id}</strong>
+                        <span>action</span>
+                      </div>
+                      <p>{effect.source_text}</p>
+                      <small>{typstStatusByTargetId[targetId] ?? 'Typst: no source'}</small>
+                      {typst ? (
+                        <div
+                          className="typst-preview compact"
+                          dangerouslySetInnerHTML={{ __html: typst.svg }}
+                        />
+                      ) : null}
+                    </div>
+                  );
+                })}
+                {fixture.ir.seed_facts.map((seed) => {
+                  const targetId = `seed:${seed.id}`;
+                  const typst = typstRenderings[targetId];
+                  return (
+                    <div className="target-card seed" key={seed.id}>
+                      <div className="target-meta">
+                        <strong>{seed.id}</strong>
+                        <span>seed</span>
+                      </div>
+                      <p>{seed.source_text}</p>
+                      <small>{typstStatusByTargetId[targetId] ?? 'Typst: no source'}</small>
+                      {typst ? (
+                        <div
+                          className="typst-preview compact"
+                          dangerouslySetInnerHTML={{ __html: typst.svg }}
+                        />
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="preview-card">
               <h3>Rust Shape</h3>
-              <div className="metric-grid">
-                <div>
-                  <span className="metric-label">Functions</span>
-                  <strong>{(source.match(/\bfn\b/g) ?? []).length}</strong>
-                </div>
-                <div>
-                  <span className="metric-label">Structs</span>
-                  <strong>{(source.match(/\bstruct\b/g) ?? []).length}</strong>
-                </div>
-                <div>
-                  <span className="metric-label">Enums</span>
-                  <strong>{(source.match(/\benum\b/g) ?? []).length}</strong>
-                </div>
-                <div>
-                  <span className="metric-label">Rules</span>
-                  <strong>{(source.match(/add_rule/g) ?? []).length}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div className="preview-card">
-              <h3>Top Tokens</h3>
               <div className="token-list">
                 {stats.keywordHits.map((entry) => (
                   <span className="token-chip" key={entry.keyword}>
-                    {entry.keyword} × {entry.count}
+                    {entry.keyword} x {entry.count}
                   </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="preview-card">
-              <h3>typst.ts Spike</h3>
-              <p>{typstStatus}</p>
-              <div className="typst-results">
-                {typstResults.map((result) => (
-                  <div className="typst-result" key={result.id}>
-                    <div className="typst-result-meta">
-                      <strong>{result.label}</strong>
-                      <span>
-                        {result.mode} · {result.elapsedMs.toFixed(0)}ms
-                      </span>
-                    </div>
-                    <code>{result.source}</code>
-                    {result.svg ? (
-                      <div
-                        className="typst-preview"
-                        dangerouslySetInnerHTML={{ __html: result.svg }}
-                      />
-                    ) : (
-                      <p>{result.error}</p>
-                    )}
-                  </div>
                 ))}
               </div>
             </div>
