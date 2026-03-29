@@ -1,5 +1,9 @@
 import { instance } from '@viz-js/viz';
-import type { RenderedTypstSnippet } from '@eggplant-shared/typstCore';
+import {
+  displayTextFallbackSource,
+  normalizeTypstMathSource,
+  type RenderedTypstSnippet,
+} from '@eggplant-shared/typstCore';
 
 let vizPromise: Promise<Awaited<ReturnType<typeof instance>>> | undefined;
 
@@ -11,14 +15,22 @@ async function viz() {
 }
 
 function normalizeTypstLabelText(text: string): string {
-  const trimmed = text.trim();
-  if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length >= 4) {
-    return trimmed.slice(2, -2).trim();
+  return displayTextFallbackSource(normalizeTypstMathSource(text)).trim();
+}
+
+function setNodeTextContent(textNodes: SVGTextElement[], source: string): void {
+  const lines = normalizeTypstLabelText(source)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) {
+    return;
   }
-  if (trimmed.startsWith('$') && trimmed.endsWith('$') && trimmed.length >= 2) {
-    return trimmed.slice(1, -1).trim();
-  }
-  return trimmed;
+
+  textNodes.forEach((textNode, index) => {
+    textNode.textContent = lines[index] ?? '';
+  });
 }
 
 function sanitizeNodeLabels(svgMarkup: string, typstSources: Record<string, string>): string {
@@ -35,13 +47,13 @@ function sanitizeNodeLabels(svgMarkup: string, typstSources: Record<string, stri
 
     const source = typstSources[title];
     if (source) {
-      textNodes[0].textContent = normalizeTypstLabelText(source);
+      setNodeTextContent(textNodes, source);
     }
+  }
 
-    for (const textNode of textNodes) {
-      const current = textNode.textContent ?? '';
-      textNode.textContent = normalizeTypstLabelText(current);
-    }
+  for (const textNode of Array.from(root.querySelectorAll('text'))) {
+    const current = textNode.textContent ?? '';
+    textNode.textContent = normalizeTypstLabelText(current);
   }
 
   return new XMLSerializer().serializeToString(root);

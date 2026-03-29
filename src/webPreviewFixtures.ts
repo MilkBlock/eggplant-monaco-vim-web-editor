@@ -1,5 +1,5 @@
 import type { PatternIr } from '@eggplant-vscode/ir';
-import { patternIrToDotWithMode } from '@eggplant-vscode/dot';
+import { collectTypstReplacementSources, patternIrToDotWithMode } from '@eggplant-vscode/dot';
 
 export type WebPreviewFixture = {
   id: string;
@@ -45,11 +45,11 @@ function buildSharedDotFromIr(ir: PatternIr): string {
 
 function buildTypstSourcesFromIr(ir: PatternIr): Record<string, string> {
   const byTargetId: Record<string, string> = {};
-  for (const node of ir.nodes) {
-    byTargetId[node.id] = node.label;
+  for (const entry of collectTypstReplacementSources(ir, 'combined', 'recursive', 'tree-safe')) {
+    byTargetId[entry.targetId] = entry.source;
   }
   for (const effect of ir.action_effects) {
-    byTargetId[`effect:${effect.id}`] = effect.source_text;
+    byTargetId[`effect:${effect.id}`] ??= effect.source_text;
   }
   for (const seed of ir.seed_facts) {
     byTargetId[`seed:${seed.id}`] = seed.source_text;
