@@ -465,6 +465,17 @@ select {
   height: auto;
 }
 
+.typst-preview-inline {
+  display: block;
+  line-height: 0;
+}
+
+.typst-preview-inline > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .typst-preview.compact {
   padding: 6px;
 }
