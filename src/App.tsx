@@ -290,7 +290,7 @@ export default function App() {
 
     const runLayout = async () => {
       try {
-        const svg = await renderDotToSvg(previewState.dot, typstRenderings);
+        const svg = await renderDotToSvg(previewState.dot, typstRenderings, fixture.typstSources);
         if (cancelled) {
           return;
         }
@@ -320,7 +320,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture.svg, previewState.dot, typstRenderings]);
+  }, [fixture.svg, fixture.typstSources, previewState.dot, typstRenderings]);
 
   useEffect(() => {
     setSource(selectedFile.source);
