@@ -17,13 +17,14 @@ import {
   type PreviewConstraintEntry,
   type PreviewInteractionState,
 } from '@eggplant-shared/previewCore';
+import type { PatternIr } from '@eggplant-vscode/ir';
 import { findRedundantActionInsertChecks } from '@eggplant-vscode/ruleChecks';
 import type { RenderedTypstSnippet } from '@eggplant-shared/typstCore';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
 import { buildFixtureFromScope, webPreviewFixtures } from './webPreviewFixtures';
-import { pickRuleScopeByByteOffset } from './webRuleScopes';
+import { extractPatternIr } from './webExtractor';
 
 type SampleFile = {
   id: string;
@@ -71,6 +72,11 @@ function utf16OffsetToUtf8ByteOffset(source: string, utf16Offset: number): numbe
   return utf8Encoder.encode(source.slice(0, clampedOffset)).length;
 }
 
+function scopeLabelFromIr(ir: PatternIr): string {
+  const { kind, text_range } = ir.scope;
+  return `${kind} @ ${text_range.start}-${text_range.end}`;
+}
+
 function deriveTypstStatusByTargetId(
   typstSources: Record<string, string>,
   typstRenderings: Record<string, RenderedTypstSnippet>,
@@ -116,17 +122,16 @@ export default function App() {
     () => sampleFiles.find((file) => file.id === selectedId) ?? sampleFiles[0],
     [selectedId],
   );
-  const sourceMatchesSample = source === selectedFile.source;
   const cursorByteOffset = useMemo(
     () => utf16OffsetToUtf8ByteOffset(source, cursorUtf16Offset),
     [cursorUtf16Offset, source],
   );
-  const activeRuleScope = useMemo(() => {
-    if (!sourceMatchesSample) {
-      return null;
-    }
-    return pickRuleScopeByByteOffset(selectedFile.id, cursorByteOffset);
-  }, [cursorByteOffset, selectedFile.id, sourceMatchesSample]);
+  const [activeRuleScope, setActiveRuleScope] = useState<{
+    label: string;
+    ir: PatternIr;
+    source: 'extractor';
+  } | null>(null);
+  const [ruleSyncStatus, setRuleSyncStatus] = useState('Waiting for extractor...');
   const fixture = useMemo(() => {
     if (!activeRuleScope) {
       return webPreviewFixtures[selectedFile.id];
@@ -211,8 +216,42 @@ export default function App() {
   useEffect(() => {
     setSource(selectedFile.source);
     setCursorUtf16Offset(0);
+    setActiveRuleScope(null);
+    setRuleSyncStatus('Waiting for extractor...');
     setInteractionState(createDefaultPreviewInteractionState());
   }, [selectedFile]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          setRuleSyncStatus(`Extracting rule scope at byte offset ${cursorByteOffset}...`);
+          const ir = await extractPatternIr(source, cursorByteOffset);
+          if (cancelled) {
+            return;
+          }
+          const label = scopeLabelFromIr(ir);
+          setActiveRuleScope({ label, ir, source: 'extractor' });
+          setRuleSyncStatus(`Cursor bound to ${label} (byte offset ${cursorByteOffset}).`);
+        } catch (error) {
+          if (cancelled) {
+            return;
+          }
+          const message = error instanceof Error ? error.message : String(error);
+          setActiveRuleScope(null);
+          setRuleSyncStatus(
+            `No supported rule scope at byte offset ${cursorByteOffset}; showing sample default. (${message})`,
+          );
+        }
+      })();
+    }, 120);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [cursorByteOffset, source]);
 
   useEffect(() => {
     return () => {
@@ -347,13 +386,7 @@ export default function App() {
           <div className="panel-header">
             <h2>Rule Sync</h2>
           </div>
-          <p className="subtle">
-            {sourceMatchesSample
-              ? activeRuleScope
-                ? `Cursor bound to ${activeRuleScope.label} (byte offset ${cursorByteOffset}).`
-                : `No add_rule scope at byte offset ${cursorByteOffset}; showing sample default.`
-              : 'Edited source diverged from bundled sample; rule-to-cursor sync is disabled.'}
-          </p>
+          <p className="subtle">{ruleSyncStatus}</p>
         </div>
       </aside>
 
