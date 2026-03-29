@@ -11,52 +11,13 @@ import {
 
 const renderCache = new Map<string, Promise<RenderedTypstSnippet | null>>();
 let wasmImporterConfigured = false;
-const RENDER_TIMEOUT_MS = 4000;
-
-function applyTypstSvgTheme(svg: string): string {
-  return svg.replace(
-    /<svg\b([^>]*?)>/,
-    (_match, attrs: string) => {
-      const styleMatch = attrs.match(/\sstyle="([^"]*)"/);
-      const themedStyle = '--glyph_fill:#0f1720;--glyph_stroke:transparent;';
-      if (styleMatch) {
-        const merged = `${styleMatch[1]};${themedStyle}`;
-        return `<svg${attrs.replace(styleMatch[0], ` style="${merged}"`)}>`;
-      }
-      return `<svg${attrs} style="${themedStyle}">`;
-    },
-  );
-}
-
-function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error(`${label} timed out after ${RENDER_TIMEOUT_MS}ms`));
-    }, RENDER_TIMEOUT_MS);
-
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        clearTimeout(timer);
-        reject(error);
-      },
-    );
-  });
-}
 
 const webTypstRenderer: TypstSnippetRenderer = {
   async render(document: string): Promise<string> {
     ensureWasmImporter();
-    const svg = await withTimeout(
-      $typst.svg({
-        mainContent: document,
-      }),
-      'typst render',
-    );
-    return applyTypstSvgTheme(svg);
+    return $typst.svg({
+      mainContent: document,
+    });
   },
 };
 
