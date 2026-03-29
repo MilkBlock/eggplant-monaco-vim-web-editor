@@ -10,6 +10,11 @@ async function viz() {
   return vizPromise;
 }
 
+function parseSvgDimension(svgMarkup: string, attr: 'width' | 'height'): number {
+  const match = svgMarkup.match(new RegExp(`${attr}="([0-9.]+)(?:pt)?"`));
+  return match ? Number(match[1]) : 0;
+}
+
 function normalizeTypstLabelText(text: string): string {
   const trimmed = text.trim();
   if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length >= 4) {
@@ -21,35 +26,163 @@ function normalizeTypstLabelText(text: string): string {
   return trimmed;
 }
 
-function sanitizeNodeLabels(svgMarkup: string, typstSources: Record<string, string>): string {
+function encodeSvgDataUri(svgMarkup: string): string {
+  return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgMarkup)))}`;
+}
+
+function findNodeShape(nodeGroup: Element): SVGGraphicsElement | null {
+  return (
+    (Array.from(nodeGroup.children).find((child) => {
+      return child.tagName !== 'title' && child.tagName !== 'text' && child.tagName !== 'image';
+    }) as SVGGraphicsElement | undefined) ?? null
+  );
+}
+
+function applyTypstRenderingsToSvg(
+  svgMarkup: string,
+  typstRenderings: Record<string, RenderedTypstSnippet>,
+  typstSources: Record<string, string>,
+): string {
+  if (!Object.keys(typstRenderings).length) {
+    return svgMarkup;
+  }
+
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgMarkup, 'image/svg+xml');
   const root = doc.documentElement;
+  const host = document.createElement('div');
+  host.style.position = 'absolute';
+  host.style.left = '-10000px';
+  host.style.top = '-10000px';
+  host.style.visibility = 'hidden';
+  host.style.pointerEvents = 'none';
+  host.appendChild(root);
+  document.body.appendChild(host);
 
-  for (const nodeGroup of Array.from(root.querySelectorAll('g.node'))) {
-    const title = nodeGroup.querySelector('title')?.textContent ?? '';
-    const textNodes = Array.from(nodeGroup.querySelectorAll('text'));
-    if (textNodes.length === 0) {
-      continue;
+  try {
+    const nodeGroups = Array.from(root.querySelectorAll('g.node'));
+    const consumedNodeGroups = new Set<Element>();
+
+    const resolveNodeGroupForTarget = (targetId: string): Element | undefined => {
+      const byTitle = nodeGroups.find((group) => group.querySelector('title')?.textContent === targetId);
+      if (byTitle && !consumedNodeGroups.has(byTitle)) {
+        return byTitle;
+      }
+
+      const source = typstSources[targetId];
+      if (!source) {
+        return undefined;
+      }
+      const normalizedSource = normalizeTypstLabelText(source);
+      if (!normalizedSource) {
+        return undefined;
+      }
+
+      return nodeGroups.find((group) => {
+        if (consumedNodeGroups.has(group)) {
+          return false;
+        }
+        const firstText = group.querySelector('text')?.textContent ?? '';
+        return normalizeTypstLabelText(firstText) === normalizedSource;
+      });
+    };
+
+    for (const [targetId, rendered] of Object.entries(typstRenderings)) {
+      const nodeGroup = resolveNodeGroupForTarget(targetId);
+      if (!nodeGroup) {
+        continue;
+      }
+      consumedNodeGroups.add(nodeGroup);
+
+      const shape = findNodeShape(nodeGroup);
+      if (!shape) {
+        continue;
+      }
+
+      const textNodes = Array.from(nodeGroup.querySelectorAll('text'));
+      const textLines = textNodes
+        .map((node) => node.textContent?.trim() || '')
+        .filter((line) => line.length > 0);
+      const annotationLines = textLines.slice(1);
+
+      const bbox = shape.getBBox();
+      const formulaWidth = rendered.width || parseSvgDimension(rendered.svg, 'width');
+      const formulaHeight = rendered.height || parseSvgDimension(rendered.svg, 'height');
+      if (!formulaWidth || !formulaHeight) {
+        continue;
+      }
+
+      const annotationLineHeight = 12;
+      const annotationGap = annotationLines.length > 0 ? 4 : 0;
+      const annotationBlockHeight = annotationLines.length * annotationLineHeight + annotationGap;
+      const maxWidth = bbox.width * 0.92;
+      const maxHeight = bbox.height * 0.86 - annotationBlockHeight;
+      if (maxWidth <= 0 || maxHeight <= 0) {
+        continue;
+      }
+
+      const scale = Math.min(maxWidth / formulaWidth, maxHeight / formulaHeight);
+      if (!Number.isFinite(scale) || scale <= 0) {
+        continue;
+      }
+
+      const width = formulaWidth * scale;
+      const height = formulaHeight * scale;
+      const contentTop = bbox.y + (bbox.height - (height + annotationBlockHeight)) / 2;
+      const image = doc.createElementNS('http://www.w3.org/2000/svg', 'image');
+      image.setAttribute('href', encodeSvgDataUri(rendered.svg));
+      image.setAttribute('x', String(bbox.x + (bbox.width - width) / 2));
+      image.setAttribute('y', String(contentTop));
+      image.setAttribute('width', String(width));
+      image.setAttribute('height', String(height));
+      image.setAttribute('data-typst-rendering', 'true');
+      image.setAttribute('pointer-events', 'none');
+
+      const annotationOverlay = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+      annotationOverlay.setAttribute('data-typst-annotation-overlay', 'true');
+      annotationOverlay.setAttribute('pointer-events', 'none');
+      for (let index = 0; index < annotationLines.length; index += 1) {
+        const line = annotationLines[index];
+        const text = doc.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', String(bbox.x + bbox.width / 2));
+        text.setAttribute('y', String(contentTop + height + annotationGap + (index + 1) * annotationLineHeight - 2));
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '10');
+        text.setAttribute('fill', '#0f1720');
+        text.setAttribute('stroke', '#ffffff');
+        text.setAttribute('stroke-width', '0.8');
+        text.setAttribute('paint-order', 'stroke');
+        text.textContent = line;
+        annotationOverlay.appendChild(text);
+      }
+
+      for (const textNode of textNodes) {
+        textNode.remove();
+      }
+      nodeGroup.appendChild(image);
+      if (annotationLines.length > 0) {
+        nodeGroup.appendChild(annotationOverlay);
+      }
     }
 
-    const source = typstSources[title];
-    if (source) {
-      textNodes[0].textContent = normalizeTypstLabelText(source);
+    // If a label still contains math wrappers, strip them so users don't see raw `$...$`.
+    for (const textNode of Array.from(root.querySelectorAll('g.node text'))) {
+      const original = textNode.textContent ?? '';
+      const normalized = normalizeTypstLabelText(original);
+      if (normalized !== original) {
+        textNode.textContent = normalized;
+      }
     }
 
-    for (const textNode of textNodes) {
-      const current = textNode.textContent ?? '';
-      textNode.textContent = normalizeTypstLabelText(current);
-    }
+    return new XMLSerializer().serializeToString(root);
+  } finally {
+    host.remove();
   }
-
-  return new XMLSerializer().serializeToString(root);
 }
 
 export async function renderDotToSvg(
   dot: string,
-  _typstRenderings: Record<string, RenderedTypstSnippet> = {},
+  typstRenderings: Record<string, RenderedTypstSnippet> = {},
   typstSources: Record<string, string> = {},
 ): Promise<string> {
   const renderer = await viz();
@@ -57,5 +190,5 @@ export async function renderDotToSvg(
     format: 'svg',
     engine: 'dot',
   });
-  return sanitizeNodeLabels(svgMarkup, typstSources);
+  return applyTypstRenderingsToSvg(svgMarkup, typstRenderings, typstSources);
 }
