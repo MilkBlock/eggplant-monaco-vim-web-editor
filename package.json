@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "postinstall": "git submodule update --init --recursive",
     "preview": "vite preview"
   },
   "dependencies": {
