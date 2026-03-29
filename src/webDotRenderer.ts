@@ -15,11 +15,7 @@ async function viz() {
 }
 
 function normalizeTypstLabelText(text: string): string {
-  return displayTextFallbackSource(normalizeTypstMathSource(text))
-    .replace(/\$\$/g, ' ')
-    .replace(/\$/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return displayTextFallbackSource(normalizeTypstMathSource(text)).trim();
 }
 
 function setNodeTextContent(textNodes: SVGTextElement[], source: string): void {
