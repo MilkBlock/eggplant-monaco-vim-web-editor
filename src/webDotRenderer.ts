@@ -70,6 +70,11 @@ function parsePathBounds(pathData: string): NodeBounds | null {
   };
 }
 
+function numberAttr(node: Element, name: string, fallback = Number.NaN): number {
+  const value = node.getAttribute(name);
+  return value === null ? fallback : Number(value);
+}
+
 function extractNodeBounds(nodeGroup: Element): NodeBounds | null {
   const shape = Array.from(nodeGroup.children).find((child) =>
     ['ellipse', 'polygon', 'rect', 'path'].includes(child.tagName.toLowerCase()),
@@ -78,7 +83,7 @@ function extractNodeBounds(nodeGroup: Element): NodeBounds | null {
     return null;
   }
 
-  if (shape instanceof SVGPolygonElement) {
+  if (shape.tagName.toLowerCase() === 'polygon') {
     const points = parsePointList(shape.getAttribute('points') ?? '');
     if (points.length === 0) {
       return null;
@@ -94,11 +99,11 @@ function extractNodeBounds(nodeGroup: Element): NodeBounds | null {
     };
   }
 
-  if (shape instanceof SVGEllipseElement) {
-    const cx = Number(shape.getAttribute('cx'));
-    const cy = Number(shape.getAttribute('cy'));
-    const rx = Number(shape.getAttribute('rx'));
-    const ry = Number(shape.getAttribute('ry'));
+  if (shape.tagName.toLowerCase() === 'ellipse') {
+    const cx = numberAttr(shape, 'cx');
+    const cy = numberAttr(shape, 'cy');
+    const rx = numberAttr(shape, 'rx');
+    const ry = numberAttr(shape, 'ry');
     if (![cx, cy, rx, ry].every(Number.isFinite)) {
       return null;
     }
@@ -111,18 +116,18 @@ function extractNodeBounds(nodeGroup: Element): NodeBounds | null {
     };
   }
 
-  if (shape instanceof SVGRectElement) {
-    const x = Number(shape.getAttribute('x') ?? '0');
-    const y = Number(shape.getAttribute('y') ?? '0');
-    const width = Number(shape.getAttribute('width'));
-    const height = Number(shape.getAttribute('height'));
+  if (shape.tagName.toLowerCase() === 'rect') {
+    const x = numberAttr(shape, 'x', 0);
+    const y = numberAttr(shape, 'y', 0);
+    const width = numberAttr(shape, 'width');
+    const height = numberAttr(shape, 'height');
     if (![x, y, width, height].every(Number.isFinite)) {
       return null;
     }
     return { x, y, width, height };
   }
 
-  if (shape instanceof SVGPathElement) {
+  if (shape.tagName.toLowerCase() === 'path') {
     return parsePathBounds(shape.getAttribute('d') ?? '');
   }
 
@@ -134,8 +139,9 @@ function createInlineTypstSvg(
   rendered: RenderedTypstSnippet,
   bounds: NodeBounds,
 ): SVGElement | null {
-  const renderedDoc = new DOMParser().parseFromString(rendered.svg, 'image/svg+xml');
-  const renderedRoot = renderedDoc.documentElement;
+  const tempGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  tempGroup.innerHTML = rendered.svg.trim();
+  const renderedRoot = tempGroup.firstElementChild;
   if (!renderedRoot || renderedRoot.tagName.toLowerCase() !== 'svg') {
     return null;
   }
@@ -205,8 +211,8 @@ function setFallbackNodeText(textNodes: SVGTextElement[], source: string): void 
 }
 
 function collectNodeTextNodes(nodeGroup: Element): SVGTextElement[] {
-  return Array.from(nodeGroup.querySelectorAll(':scope > text')).filter(
-    (node): node is SVGTextElement => node instanceof SVGTextElement,
+  return Array.from(nodeGroup.children).filter(
+    (node): node is SVGTextElement => node.tagName.toLowerCase() === 'text',
   );
 }
 
@@ -217,7 +223,9 @@ function applyNodeRenderings(
 ): void {
   for (const nodeGroup of Array.from(root.querySelectorAll('g.node'))) {
     const title = nodeGroup.querySelector('title')?.textContent ?? '';
-    for (const imageNode of Array.from(nodeGroup.querySelectorAll(':scope > image'))) {
+    for (const imageNode of Array.from(nodeGroup.children).filter(
+      (node) => node.tagName.toLowerCase() === 'image',
+    )) {
       imageNode.remove();
     }
 
@@ -252,7 +260,7 @@ function applyNodeRenderings(
 function sanitizeGraphvizText(root: SVGElement): void {
   for (const selector of ['g.edge > text', 'g.cluster > text', 'g.node > text']) {
     for (const textNode of Array.from(root.querySelectorAll(selector)).filter(
-      (node): node is SVGTextElement => node instanceof SVGTextElement,
+      (node): node is SVGTextElement => node.tagName.toLowerCase() === 'text',
     )) {
       const current = textNode.textContent ?? '';
       textNode.textContent = normalizeTypstLabelText(current);

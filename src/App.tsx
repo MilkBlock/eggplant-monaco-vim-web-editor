@@ -24,12 +24,14 @@ import {
   normalizeTypstMathSource,
   type RenderedTypstSnippet,
 } from '@eggplant-shared/typstCore';
+import { collectTypstReplacementSources } from '@eggplant-vscode/dot';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
 import { buildFixtureFromScope, webPreviewFixtures } from './webPreviewFixtures';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
+import { type WebRuleScope, webRuleScopesBySampleId } from './webRuleScopes';
 
 type SampleFile = {
   id: string;
@@ -97,6 +99,15 @@ function findFirstRuleCallOffset(source: string): number | null {
     return null;
   }
   return match.index + callOffset;
+}
+
+function countTypstTargets(ir: PatternIr): number {
+  return collectTypstReplacementSources(ir, 'combined', 'recursive', 'tree-safe').length;
+}
+
+function findPreferredTypstScope(sampleId: string): WebRuleScope | null {
+  const scopes = webRuleScopesBySampleId[sampleId] ?? [];
+  return scopes.find((scope) => countTypstTargets(scope.ir) > 0) ?? null;
 }
 
 function deriveTypstStatusByTargetId(
@@ -346,12 +357,26 @@ export default function App() {
               }
             }
           }
+
+          let usedPreferredTypstScope: WebRuleScope | null = null;
+          if (countTypstTargets(ir) === 0 && source === selectedFile.source) {
+            const preferredTypstScope = findPreferredTypstScope(selectedFile.id);
+            if (preferredTypstScope && preferredTypstScope.ir.scope.text_range.start !== ir.scope.text_range.start) {
+              ir = preferredTypstScope.ir;
+              usedPreferredTypstScope = preferredTypstScope;
+            }
+          }
+
           if (cancelled) {
             return;
           }
           const label = scopeLabelFromIr(ir);
           setActiveRuleScope({ label, ir, source: 'extractor' });
-          if (usedFallbackOffset !== null) {
+          if (usedPreferredTypstScope) {
+            setRuleSyncStatus(
+              `Cursor scope has no typst targets; using typst-ready rule ${usedPreferredTypstScope.label} at ${label}.`,
+            );
+          } else if (usedFallbackOffset !== null) {
             setRuleSyncStatus(
               `Cursor scope was empty; using first rule at ${label} (fallback byte offset ${usedFallbackOffset}).`,
             );
@@ -375,7 +400,7 @@ export default function App() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [cursorByteOffset, source]);
+  }, [cursorByteOffset, selectedFile, source]);
 
   useEffect(() => {
     return () => {
