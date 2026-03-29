@@ -667,10 +667,13 @@ export default function App() {
                         </button>
                       </div>
                       {typst ? (
-                        <div
-                          className="typst-preview compact"
-                          dangerouslySetInnerHTML={{ __html: typst.svg }}
-                        />
+                        <>
+                          <div
+                            className="typst-preview compact"
+                            dangerouslySetInnerHTML={{ __html: typst.svg }}
+                          />
+                          <code className="typst-source">{fixture.typstSources[node.id] ?? node.label}</code>
+                        </>
                       ) : (
                         <div className="status-pill">{typstStatusByTargetId[node.id] ?? 'Typst: no source'}</div>
                       )}
@@ -690,10 +693,15 @@ export default function App() {
                       <p>{effect.source_text}</p>
                       <small>{typstStatusByTargetId[targetId] ?? 'Typst: no source'}</small>
                       {typst ? (
-                        <div
-                          className="typst-preview compact"
-                          dangerouslySetInnerHTML={{ __html: typst.svg }}
-                        />
+                        <>
+                          <div
+                            className="typst-preview compact"
+                            dangerouslySetInnerHTML={{ __html: typst.svg }}
+                          />
+                          <code className="typst-source">
+                            {fixture.typstSources[targetId] ?? effect.source_text}
+                          </code>
+                        </>
                       ) : null}
                     </div>
                   );
@@ -710,10 +718,13 @@ export default function App() {
                       <p>{seed.source_text}</p>
                       <small>{typstStatusByTargetId[targetId] ?? 'Typst: no source'}</small>
                       {typst ? (
-                        <div
-                          className="typst-preview compact"
-                          dangerouslySetInnerHTML={{ __html: typst.svg }}
-                        />
+                        <>
+                          <div
+                            className="typst-preview compact"
+                            dangerouslySetInnerHTML={{ __html: typst.svg }}
+                          />
+                          <code className="typst-source">{fixture.typstSources[targetId] ?? seed.source_text}</code>
+                        </>
                       ) : null}
                     </div>
                   );
