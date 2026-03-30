@@ -243,8 +243,12 @@ select {
   height: auto;
 }
 
-.graph-preview svg text {
+.graph-preview svg text,
+.graph-zoom-content svg text {
   fill: #0f1720;
+  font-family: "Avenir Next", "SF Pro Text", "IBM Plex Sans", "Segoe UI", sans-serif !important;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 .graph-zoom-modal {
@@ -289,10 +293,6 @@ select {
   width: max-content;
   min-width: 100%;
   height: auto;
-}
-
-.graph-zoom-content svg text {
-  fill: #0f1720;
 }
 
 .graph-toolbar {
