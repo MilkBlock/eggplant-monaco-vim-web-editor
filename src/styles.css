@@ -291,6 +291,10 @@ select {
   height: auto;
 }
 
+.graph-zoom-content svg text {
+  fill: #0f1720;
+}
+
 .graph-toolbar {
   display: flex;
   align-items: center;
