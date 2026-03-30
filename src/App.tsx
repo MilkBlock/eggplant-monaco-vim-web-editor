@@ -19,21 +19,20 @@ import {
   type PreviewInteractionState,
 } from '@eggplant-shared/previewCore';
 import type { PatternIr } from '@eggplant-vscode/ir';
-import type { DotViewMode } from '@eggplant-vscode/dot';
+import { collectTypstReplacementSources, patternIrToDotWithMode, type DotViewMode } from '@eggplant-vscode/dot';
 import { findRedundantActionInsertChecks } from '@eggplant-vscode/ruleChecks';
 import {
   displayTextFallbackSource,
   normalizeTypstMathSource,
   type RenderedTypstSnippet,
 } from '@eggplant-shared/typstCore';
-import { collectTypstReplacementSources } from '@eggplant-vscode/dot';
 import patternSamplesSource from './samples/pattern_samples.rs?raw';
 import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
-import { buildFixtureFromScope, buildTypstSourcesFromIr, webPreviewFixtures } from './webPreviewFixtures';
+import mathMicrobenchmarkSource from './samples/math_microbenchmark.rs?raw';
+import complexSource from './samples/complex.rs?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
-import { type WebRuleScope, webRuleScopesBySampleId } from './webRuleScopes';
 
 type SampleFile = {
   id: string;
@@ -42,7 +41,28 @@ type SampleFile = {
   source: string;
 };
 
+type PreviewFixture = {
+  fileName: string;
+  description: string;
+  dot: string;
+  svg: string;
+  ir: PatternIr;
+  typstSources: Record<string, string>;
+};
+
 const sampleFiles: SampleFile[] = [
+  {
+    id: 'math_microbenchmark',
+    label: 'math_microbenchmark.rs',
+    description: 'High-density math sample with rich typst rendering coverage.',
+    source: mathMicrobenchmarkSource,
+  },
+  {
+    id: 'complex',
+    label: 'complex.rs',
+    description: 'Complex rule sample for nested pattern/action extraction.',
+    source: complexSource,
+  },
   {
     id: 'pattern_samples',
     label: 'pattern_samples.rs',
@@ -66,6 +86,7 @@ const sampleFiles: SampleFile[] = [
 const rustKeywords = ['fn', 'struct', 'enum', 'impl', 'let', 'pub', 'use', 'mod', 'match', 'if', 'else', 'return'];
 const utf8Encoder = new TextEncoder();
 const dotViewModes: DotViewMode[] = ['pattern', 'action', 'combined'];
+const defaultSampleId = 'math_microbenchmark';
 
 type GraphContextMenuState = {
   open: boolean;
@@ -126,13 +147,61 @@ function findFirstRuleCallOffset(source: string): number | null {
   return match.index + callOffset;
 }
 
-function countTypstTargets(ir: PatternIr): number {
-  return collectTypstReplacementSources(ir, 'combined', 'recursive', 'tree-safe').length;
+function buildTypstSourcesFromIr(ir: PatternIr, mode: DotViewMode = 'combined'): Record<string, string> {
+  const byTargetId: Record<string, string> = {};
+  for (const entry of collectTypstReplacementSources(ir, mode, 'recursive', 'tree-safe')) {
+    byTargetId[entry.targetId] = entry.source;
+  }
+  return byTargetId;
 }
 
-function findPreferredTypstScope(sampleId: string): WebRuleScope | null {
-  const scopes = webRuleScopesBySampleId[sampleId] ?? [];
-  return scopes.find((scope) => countTypstTargets(scope.ir) > 0) ?? null;
+function buildFallbackSvg(title: string): string {
+  return `
+    <svg viewBox="0 0 560 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${title}">
+      <rect width="560" height="160" rx="16" fill="#0f1720" />
+      <text x="22" y="36" font-family="IBM Plex Sans, sans-serif" font-size="16" fill="#f8f5ee">${title}</text>
+      <text x="22" y="68" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="#9aa4b2">Waiting for extractor output…</text>
+      <text x="22" y="92" font-family="IBM Plex Sans, sans-serif" font-size="13" fill="#9aa4b2">Move cursor into a rule or click Refresh.</text>
+    </svg>
+  `.trim();
+}
+
+function createEmptyIr(sourceLength: number): PatternIr {
+  return {
+    scope: {
+      kind: 'pattern_function',
+      text_range: { start: 0, end: sourceLength },
+      pattern_range: { start: 0, end: sourceLength },
+      action_range: { start: 0, end: sourceLength },
+    },
+    nodes: [],
+    edges: [],
+    roots: [],
+    constraints: [],
+    action_effects: [],
+    seed_facts: [],
+    display_templates: [],
+    typst_templates: [],
+    precedence_templates: [],
+    diagnostics: [],
+  };
+}
+
+function buildFixtureFromIr(
+  fileName: string,
+  description: string,
+  ruleLabel: string,
+  ir: PatternIr,
+  mode: DotViewMode,
+): PreviewFixture {
+  return {
+    fileName,
+    description: `${description} Active rule: ${ruleLabel}.`,
+    dot: patternIrToDotWithMode(ir, mode, 'recursive', 'tree-safe', {}),
+    svg: buildFallbackSvg(`${fileName} · ${ruleLabel}`),
+    ir,
+    typstSources: buildTypstSourcesFromIr(ir, mode),
+  };
 }
 
 function deriveTypstStatusByTargetId(
@@ -226,8 +295,9 @@ function renderTypstPreview(
 }
 
 export default function App() {
-  const [selectedId, setSelectedId] = useState(sampleFiles[0].id);
-  const [source, setSource] = useState(sampleFiles[0].source);
+  const initialSample = sampleFiles.find((file) => file.id === defaultSampleId) ?? sampleFiles[0];
+  const [selectedId, setSelectedId] = useState(initialSample.id);
+  const [source, setSource] = useState(initialSample.source);
   const [dotViewMode, setDotViewMode] = useState<DotViewMode>('combined');
   const [interactionState, setInteractionState] = useState<PreviewInteractionState>(
     createDefaultPreviewInteractionState(),
@@ -264,27 +334,25 @@ export default function App() {
   const [ruleSyncStatus, setRuleSyncStatus] = useState('Waiting for extractor...');
   const [graphSvg, setGraphSvg] = useState('');
   const [graphLayoutStatus, setGraphLayoutStatus] = useState('Graph layout: waiting...');
+  const emptyIr = useMemo(() => createEmptyIr(selectedFile.source.length), [selectedFile.source.length]);
   const fixtureBase = useMemo(() => {
     if (!activeRuleScope) {
-      const fallbackFixture = webPreviewFixtures[selectedFile.id];
-      return buildFixtureFromScope(
-        selectedFile.id,
+      return buildFixtureFromIr(
         selectedFile.label,
         selectedFile.description,
-        scopeLabelFromIr(fallbackFixture.ir),
-        fallbackFixture.ir,
+        'pending scope',
+        emptyIr,
         dotViewMode,
       );
     }
-    return buildFixtureFromScope(
-      selectedFile.id,
+    return buildFixtureFromIr(
       selectedFile.label,
       selectedFile.description,
       activeRuleScope.label,
       activeRuleScope.ir,
       dotViewMode,
     );
-  }, [activeRuleScope, dotViewMode, selectedFile]);
+  }, [activeRuleScope, dotViewMode, emptyIr, selectedFile]);
   const fixture = useMemo(
     () => ({
       ...fixtureBase,
@@ -445,25 +513,12 @@ export default function App() {
             }
           }
 
-          let usedPreferredTypstScope: WebRuleScope | null = null;
-          if (countTypstTargets(ir) === 0 && source === selectedFile.source) {
-            const preferredTypstScope = findPreferredTypstScope(selectedFile.id);
-            if (preferredTypstScope && preferredTypstScope.ir.scope.text_range.start !== ir.scope.text_range.start) {
-              ir = preferredTypstScope.ir;
-              usedPreferredTypstScope = preferredTypstScope;
-            }
-          }
-
           if (cancelled) {
             return;
           }
           const label = scopeLabelFromIr(ir);
           setActiveRuleScope({ label, ir, source: 'extractor' });
-          if (usedPreferredTypstScope) {
-            setRuleSyncStatus(
-              `Cursor scope has no typst targets; using typst-ready rule ${usedPreferredTypstScope.label} at ${label}.`,
-            );
-          } else if (usedFallbackOffset !== null) {
+          if (usedFallbackOffset !== null) {
             setRuleSyncStatus(
               `Cursor scope was empty; using first rule at ${label} (fallback byte offset ${usedFallbackOffset}).`,
             );
@@ -477,7 +532,7 @@ export default function App() {
           const message = error instanceof Error ? error.message : String(error);
           setActiveRuleScope(null);
           setRuleSyncStatus(
-            `No supported rule scope at byte offset ${cursorByteOffset}; showing sample default. (${message})`,
+            `No supported rule scope at byte offset ${cursorByteOffset}. (${message})`,
           );
         }
       })();
