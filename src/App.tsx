@@ -19,7 +19,12 @@ import {
   type PreviewInteractionState,
 } from '@eggplant-shared/previewCore';
 import type { PatternIr } from '@eggplant-vscode/ir';
-import { collectTypstReplacementSources, patternIrToDotWithMode, type DotViewMode } from '@eggplant-vscode/dot';
+import {
+  collectTypstReplacementSources,
+  patternIrToDotWithMode,
+  type DotLabelStyle,
+  type DotViewMode,
+} from '@eggplant-vscode/dot';
 import { findRedundantActionInsertChecks } from '@eggplant-vscode/ruleChecks';
 import {
   displayTextFallbackSource,
@@ -148,9 +153,13 @@ function findFirstRuleCallOffset(source: string): number | null {
   return match.index + callOffset;
 }
 
-function buildTypstSourcesFromIr(ir: PatternIr, mode: DotViewMode = 'combined'): Record<string, string> {
+function buildTypstSourcesFromIr(
+  ir: PatternIr,
+  mode: DotViewMode = 'combined',
+  labelStyle: DotLabelStyle = 'recursive',
+): Record<string, string> {
   const byTargetId: Record<string, string> = {};
-  for (const entry of collectTypstReplacementSources(ir, mode, 'recursive', 'tree-safe')) {
+  for (const entry of collectTypstReplacementSources(ir, mode, labelStyle, 'tree-safe')) {
     byTargetId[entry.targetId] = entry.source;
   }
   return byTargetId;
@@ -194,14 +203,15 @@ function buildFixtureFromIr(
   ruleLabel: string,
   ir: PatternIr,
   mode: DotViewMode,
+  labelStyle: DotLabelStyle,
 ): PreviewFixture {
   return {
     fileName,
     description: `${description} Active rule: ${ruleLabel}.`,
-    dot: patternIrToDotWithMode(ir, mode, 'recursive', 'tree-safe', {}),
+    dot: patternIrToDotWithMode(ir, mode, labelStyle, 'tree-safe', {}),
     svg: buildFallbackSvg(`${fileName} · ${ruleLabel}`),
     ir,
-    typstSources: buildTypstSourcesFromIr(ir, mode),
+    typstSources: buildTypstSourcesFromIr(ir, mode, labelStyle),
   };
 }
 
@@ -300,6 +310,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(initialSample.id);
   const [source, setSource] = useState(initialSample.source);
   const [dotViewMode, setDotViewMode] = useState<DotViewMode>('combined');
+  const [detailExpanded, setDetailExpanded] = useState(false);
   const [interactionState, setInteractionState] = useState<PreviewInteractionState>(
     createDefaultPreviewInteractionState(),
   );
@@ -342,6 +353,7 @@ export default function App() {
   const [graphSvg, setGraphSvg] = useState('');
   const [graphLayoutStatus, setGraphLayoutStatus] = useState('Graph layout: waiting...');
   const emptyIr = useMemo(() => createEmptyIr(selectedFile.source.length), [selectedFile.source.length]);
+  const effectiveLabelStyle = detailExpanded ? 'full' : 'recursive';
   const fixtureBase = useMemo(() => {
     if (!activeRuleScope) {
       return buildFixtureFromIr(
@@ -350,6 +362,7 @@ export default function App() {
         'pending scope',
         emptyIr,
         dotViewMode,
+        effectiveLabelStyle,
       );
     }
     return buildFixtureFromIr(
@@ -358,19 +371,20 @@ export default function App() {
       activeRuleScope.label,
       activeRuleScope.ir,
       dotViewMode,
+      effectiveLabelStyle,
     );
-  }, [activeRuleScope, dotViewMode, emptyIr, selectedFile]);
+  }, [activeRuleScope, dotViewMode, effectiveLabelStyle, emptyIr, selectedFile]);
   const fixture = useMemo(
     () => ({
       ...fixtureBase,
       typstSources: mergeTypstSources(
         activeRuleScope
-          ? buildTypstSourcesFromIr(activeRuleScope.ir, dotViewMode)
+          ? buildTypstSourcesFromIr(activeRuleScope.ir, dotViewMode, effectiveLabelStyle)
           : fixtureBase.typstSources,
         typstOverrides,
       ),
     }),
-    [activeRuleScope, dotViewMode, fixtureBase, typstOverrides],
+    [activeRuleScope, dotViewMode, effectiveLabelStyle, fixtureBase, typstOverrides],
   );
 
   const stats = useMemo(() => {
@@ -403,7 +417,7 @@ export default function App() {
         mode: dotViewMode,
         sourceMode: 'ast',
         selectedLabelStyle: 'recursive',
-        effectiveLabelStyle: 'recursive',
+        effectiveLabelStyle,
         recursiveStrategy: 'tree-safe',
         fileName: fixture.fileName,
         dot: fixture.dot,
@@ -430,6 +444,7 @@ export default function App() {
       activeState,
       allConstraints,
       dotViewMode,
+      effectiveLabelStyle,
       fixture,
       ruleChecks,
       typstRenderings,
@@ -1041,6 +1056,13 @@ export default function App() {
                         {modeLabel(mode)}
                       </button>
                     ))}
+                    <button
+                      className={detailExpanded ? 'action-button active' : 'action-button'}
+                      onClick={() => setDetailExpanded((value) => !value)}
+                      type="button"
+                    >
+                      {detailExpanded ? 'Hide Node Detail' : 'Show Node Detail'}
+                    </button>
                   </div>
                   <button className="action-button" onClick={handleRefresh} type="button">
                     Refresh
