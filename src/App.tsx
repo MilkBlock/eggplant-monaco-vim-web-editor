@@ -309,6 +309,7 @@ export default function App() {
   const [clipboardStatus, setClipboardStatus] = useState('');
   const [vimEnabled, setVimEnabled] = useState(true);
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
+  const [graphZoomOpen, setGraphZoomOpen] = useState(false);
   const [typstEditorTargetId, setTypstEditorTargetId] = useState('');
   const [typstEditorValue, setTypstEditorValue] = useState('');
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -714,6 +715,12 @@ export default function App() {
     setTypstEditorValue('');
   };
 
+  const handleGraphDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setGraphContextMenu(closedGraphContextMenu);
+    setGraphZoomOpen(true);
+  };
+
   const handleRefresh = () => {
     setClipboardStatus('Refreshing extractor, typst, and graph layout...');
     setGraphContextMenu(closedGraphContextMenu);
@@ -823,6 +830,24 @@ export default function App() {
       window.removeEventListener('resize', handleResize);
     };
   }, [graphContextMenu.open]);
+
+  useEffect(() => {
+    if (!graphZoomOpen) {
+      return;
+    }
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setGraphZoomOpen(false);
+      }
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [graphZoomOpen]);
 
   return (
     <div className="app-shell">
@@ -985,6 +1010,7 @@ export default function App() {
                 className="graph-preview"
                 onClick={handleGraphClick}
                 onContextMenu={handleGraphContextMenu}
+                onDoubleClick={handleGraphDoubleClick}
                 ref={graphPreviewRef}
                 dangerouslySetInnerHTML={{ __html: graphSvg }}
               />
@@ -1269,6 +1295,25 @@ export default function App() {
           </div>
         </section>
       </main>
+      {graphZoomOpen ? (
+        <div className="graph-zoom-modal" onClick={() => setGraphZoomOpen(false)}>
+          <div
+            className="graph-zoom-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="graph-zoom-header">
+              <strong>Graph Snapshot</strong>
+              <button className="action-button" onClick={() => setGraphZoomOpen(false)} type="button">
+                Close
+              </button>
+            </div>
+            <div
+              className="graph-zoom-content"
+              dangerouslySetInnerHTML={{ __html: graphSvg }}
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

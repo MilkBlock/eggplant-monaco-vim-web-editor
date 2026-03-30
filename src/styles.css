@@ -247,6 +247,50 @@ select {
   fill: #0f1720;
 }
 
+.graph-zoom-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(4, 6, 10, 0.74);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.graph-zoom-panel {
+  width: min(96vw, 1600px);
+  height: min(92vh, 1100px);
+  border-radius: 18px;
+  background: rgba(12, 16, 24, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+.graph-zoom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.graph-zoom-content {
+  overflow: auto;
+  padding: 18px;
+}
+
+.graph-zoom-content svg {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  height: auto;
+}
+
 .graph-toolbar {
   display: flex;
   align-items: center;
