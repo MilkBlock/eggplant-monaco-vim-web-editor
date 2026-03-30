@@ -33,6 +33,7 @@ import mathMicrobenchmarkSource from './samples/math_microbenchmark.rs?raw';
 import complexSource from './samples/complex.rs?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
+import { transpileEggSource } from './webTranspiler';
 
 type SampleFile = {
   id: string;
@@ -310,6 +311,11 @@ export default function App() {
   const [vimEnabled, setVimEnabled] = useState(true);
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
+  const [transpilerOpen, setTranspilerOpen] = useState(false);
+  const [transpilerInput, setTranspilerInput] = useState('');
+  const [transpilerOutput, setTranspilerOutput] = useState('');
+  const [transpilerStatus, setTranspilerStatus] = useState('Paste a .egg program to generate eggplant Rust.');
+  const [transpilerBusy, setTranspilerBusy] = useState(false);
   const [typstEditorTargetId, setTypstEditorTargetId] = useState('');
   const [typstEditorValue, setTypstEditorValue] = useState('');
   const [refreshNonce, setRefreshNonce] = useState(0);
@@ -727,6 +733,35 @@ export default function App() {
     setRefreshNonce((value) => value + 1);
   };
 
+  const handleOpenTranspiler = () => {
+    setTranspilerOpen(true);
+    setTranspilerStatus('Paste a .egg program to generate eggplant Rust.');
+  };
+
+  const handleRunTranspiler = async () => {
+    const nextInput = transpilerInput.trim();
+    if (!nextInput) {
+      setTranspilerStatus('Paste a .egg program first.');
+      return;
+    }
+
+    setTranspilerBusy(true);
+    setTranspilerStatus('Transpiling .egg source in browser wasm...');
+    try {
+      const generated = await transpileEggSource(nextInput);
+      setTranspilerOutput(generated);
+      setSource(generated);
+      setClipboardStatus('Transpiled .egg source into eggplant Rust and loaded it into the editor.');
+      setTranspilerStatus('Transpile succeeded. Generated Rust is now loaded in the editor.');
+      setTranspilerOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setTranspilerStatus(`Transpile failed: ${message}`);
+    } finally {
+      setTranspilerBusy(false);
+    }
+  };
+
   const handleCopyText = async (text: string, label: string) => {
     if (!text) {
       return;
@@ -832,11 +867,15 @@ export default function App() {
   }, [graphContextMenu.open]);
 
   useEffect(() => {
-    if (!graphZoomOpen) {
+    if (!graphZoomOpen && !transpilerOpen) {
       return;
     }
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (transpilerOpen) {
+          setTranspilerOpen(false);
+          return;
+        }
         setGraphZoomOpen(false);
       }
     };
@@ -847,7 +886,7 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [graphZoomOpen]);
+  }, [graphZoomOpen, transpilerOpen]);
 
   return (
     <div className="app-shell">
@@ -910,6 +949,9 @@ export default function App() {
               <h2>{selectedFile.label}</h2>
             </div>
             <div className="toolbar-meta">
+              <button className="action-button" onClick={handleOpenTranspiler} type="button">
+                Transpile .egg
+              </button>
               <span>{stats.lineCount} lines</span>
               <span>{stats.charCount} chars</span>
               <label className="editor-mode-toggle" htmlFor="vim-mode-toggle">
@@ -1311,6 +1353,60 @@ export default function App() {
               className="graph-zoom-content"
               dangerouslySetInnerHTML={{ __html: graphSvg }}
             />
+          </div>
+        </div>
+      ) : null}
+      {transpilerOpen ? (
+        <div className="transpiler-modal" onClick={() => setTranspilerOpen(false)}>
+          <div
+            className="transpiler-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="graph-zoom-header">
+              <div>
+                <strong>.egg to eggplant</strong>
+                <p className="subtle transpiler-subtitle">
+                  Paste egglog code here. On success, the generated eggplant Rust replaces the main editor content.
+                </p>
+              </div>
+              <button className="action-button" onClick={() => setTranspilerOpen(false)} type="button">
+                Close
+              </button>
+            </div>
+            <div className="transpiler-content">
+              <label className="transpiler-field">
+                <span>.egg input</span>
+                <textarea
+                  className="transpiler-input"
+                  onChange={(event) => setTranspilerInput(event.target.value)}
+                  placeholder="Paste .egg code here"
+                  rows={14}
+                  value={transpilerInput}
+                />
+              </label>
+              <label className="transpiler-field">
+                <span>Generated eggplant preview</span>
+                <textarea
+                  className="transpiler-output"
+                  readOnly
+                  rows={14}
+                  value={transpilerOutput}
+                />
+              </label>
+            </div>
+            <div className="transpiler-footer">
+              <p className="subtle">{transpilerStatus}</p>
+              <div className="button-row">
+                <button
+                  className="action-button active"
+                  disabled={transpilerBusy}
+                  onClick={() => void handleRunTranspiler()}
+                  type="button"
+                >
+                  {transpilerBusy ? 'Transpiling…' : 'Generate Into Editor'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
