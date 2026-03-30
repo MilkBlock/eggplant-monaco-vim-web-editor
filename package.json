@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/iosevka": "^5.2.5",
     "@monaco-editor/react": "^4.7.0",
     "@myriaddreamin/typst-ts-renderer": "^0.7.0-rc2",
     "@myriaddreamin/typst-ts-web-compiler": "^0.7.0-rc2",
