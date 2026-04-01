@@ -322,10 +322,9 @@ export default function App() {
   const [vimEnabled, setVimEnabled] = useState(true);
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
-  const [transpilerOpen, setTranspilerOpen] = useState(false);
+  const [transpilerEnabled, setTranspilerEnabled] = useState(false);
   const [transpilerInput, setTranspilerInput] = useState('');
-  const [transpilerOutput, setTranspilerOutput] = useState('');
-  const [transpilerStatus, setTranspilerStatus] = useState('Paste a .egg program to generate eggplant Rust.');
+  const [transpilerStatus, setTranspilerStatus] = useState('Enable the .egg editor, then type or paste egglog code.');
   const [transpilerBusy, setTranspilerBusy] = useState(false);
   const [typstEditorTargetId, setTypstEditorTargetId] = useState('');
   const [typstEditorValue, setTypstEditorValue] = useState('');
@@ -499,7 +498,9 @@ export default function App() {
   }, [fixture.svg, previewState.dot, refreshNonce, typstRenderings]);
 
   useEffect(() => {
-    setSource(selectedFile.source);
+    if (!transpilerEnabled) {
+      setSource(selectedFile.source);
+    }
     setDotViewMode('combined');
     setCursorUtf16Offset(0);
     setActiveRuleScope(null);
@@ -510,7 +511,7 @@ export default function App() {
     setTypstEditorTargetId('');
     setTypstEditorValue('');
     setClipboardStatus('');
-  }, [selectedFile]);
+  }, [selectedFile, transpilerEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -748,33 +749,19 @@ export default function App() {
     setRefreshNonce((value) => value + 1);
   };
 
-  const handleOpenTranspiler = () => {
-    setTranspilerOpen(true);
-    setTranspilerStatus('Paste a .egg program to generate eggplant Rust.');
-  };
-
-  const handleRunTranspiler = async () => {
-    const nextInput = transpilerInput.trim();
-    if (!nextInput) {
-      setTranspilerStatus('Paste a .egg program first.');
-      return;
-    }
-
-    setTranspilerBusy(true);
-    setTranspilerStatus('Transpiling .egg source in browser wasm...');
-    try {
-      const generated = await transpileEggSource(nextInput);
-      setTranspilerOutput(generated);
-      setSource(generated);
-      setClipboardStatus('Transpiled .egg source into eggplant Rust and loaded it into the editor.');
-      setTranspilerStatus('Transpile succeeded. Generated Rust is now loaded in the editor.');
-      setTranspilerOpen(false);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setTranspilerStatus(`Transpile failed: ${message}`);
-    } finally {
-      setTranspilerBusy(false);
-    }
+  const handleToggleTranspiler = () => {
+    setTranspilerEnabled((current) => {
+      const next = !current;
+      if (next) {
+        setTranspilerStatus('Edit the .egg source on the left. Rust output will refresh automatically.');
+      } else {
+        setTranspilerStatus('Enable the .egg editor, then type or paste egglog code.');
+        setTranspilerBusy(false);
+        setSource(selectedFile.source);
+        setClipboardStatus('Closed .egg editor and restored the selected Rust sample.');
+      }
+      return next;
+    });
   };
 
   const handleCopyText = async (text: string, label: string) => {
@@ -882,15 +869,11 @@ export default function App() {
   }, [graphContextMenu.open]);
 
   useEffect(() => {
-    if (!graphZoomOpen && !transpilerOpen) {
+    if (!graphZoomOpen) {
       return;
     }
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (transpilerOpen) {
-          setTranspilerOpen(false);
-          return;
-        }
         setGraphZoomOpen(false);
       }
     };
@@ -901,7 +884,52 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [graphZoomOpen, transpilerOpen]);
+  }, [graphZoomOpen]);
+
+  useEffect(() => {
+    if (!transpilerEnabled) {
+      return;
+    }
+
+    const nextInput = transpilerInput.trim();
+    if (!nextInput) {
+      setTranspilerBusy(false);
+      setTranspilerStatus('Paste or edit a .egg program in the left editor.');
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          setTranspilerBusy(true);
+          setTranspilerStatus('Transpiling .egg source in browser wasm...');
+          const generated = await transpileEggSource(nextInput);
+          if (cancelled) {
+            return;
+          }
+          setSource(generated);
+          setClipboardStatus('Updated generated Rust from the left .egg editor.');
+          setTranspilerStatus('Transpile succeeded. Generated Rust refreshed in the main editor.');
+        } catch (error) {
+          if (cancelled) {
+            return;
+          }
+          const message = error instanceof Error ? error.message : String(error);
+          setTranspilerStatus(`Transpile failed: ${message}`);
+        } finally {
+          if (!cancelled) {
+            setTranspilerBusy(false);
+          }
+        }
+      })();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [transpilerEnabled, transpilerInput]);
 
   return (
     <div className="app-shell">
@@ -935,25 +963,66 @@ export default function App() {
           </div>
         </div>
 
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Shared Contract</h2>
+        {transpilerEnabled ? (
+          <div className="panel egg-editor-panel">
+            <div className="panel-header">
+              <div>
+                <h2>.egg Editor</h2>
+                <p className="subtle egg-editor-subtitle">
+                  Editing here auto-generates Rust into the main editor.
+                </p>
+              </div>
+              <button className="action-button" onClick={handleToggleTranspiler} type="button">
+                Back To Samples
+              </button>
+            </div>
+            <div className="egg-editor-frame">
+              <Editor
+                defaultLanguage="plaintext"
+                language="plaintext"
+                onChange={(value) => setTranspilerInput(value ?? '')}
+                theme="vs-dark"
+                value={transpilerInput}
+                options={{
+                  automaticLayout: true,
+                  fontFamily: 'JetBrains Mono, Menlo, Monaco, monospace',
+                  fontLigatures: true,
+                  fontSize: 13,
+                  minimap: { enabled: false },
+                  padding: { top: 16, bottom: 16 },
+                  scrollBeyondLastLine: false,
+                  smoothScrolling: true,
+                  wordWrap: 'on',
+                }}
+              />
+            </div>
+            <p className="subtle">{transpilerStatus}</p>
+            {transpilerBusy ? <p className="subtle">Generating Rust...</p> : null}
+            {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
           </div>
-          <ul className="fact-list">
-            <li>Preview interaction: `@eggplant-shared/previewCore`</li>
-            <li>Typst renderer: browser adapter over `@eggplant-shared/typstCore`</li>
-            <li>Rule checks: `@eggplant-vscode/ruleChecks`</li>
-            <li>Boundary: shell-only wiring, no contract fork</li>
-          </ul>
-        </div>
+        ) : (
+          <>
+            <div className="panel">
+              <div className="panel-header">
+                <h2>Shared Contract</h2>
+              </div>
+              <ul className="fact-list">
+                <li>Preview interaction: `@eggplant-shared/previewCore`</li>
+                <li>Typst renderer: browser adapter over `@eggplant-shared/typstCore`</li>
+                <li>Rule checks: `@eggplant-vscode/ruleChecks`</li>
+                <li>Boundary: shell-only wiring, no contract fork</li>
+              </ul>
+            </div>
 
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Rule Sync</h2>
-          </div>
-          <p className="subtle">{ruleSyncStatus}</p>
-          {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
-        </div>
+            <div className="panel">
+              <div className="panel-header">
+                <h2>Rule Sync</h2>
+              </div>
+              <p className="subtle">{ruleSyncStatus}</p>
+              {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
+            </div>
+          </>
+        )}
       </aside>
 
       <main className="workspace">
@@ -961,11 +1030,15 @@ export default function App() {
           <div className="toolbar">
             <div>
               <p className="eyebrow">Editor</p>
-              <h2>{selectedFile.label}</h2>
+              <h2>{transpilerEnabled ? 'generated_from_egg.rs' : selectedFile.label}</h2>
             </div>
             <div className="toolbar-meta">
-              <button className="action-button" onClick={handleOpenTranspiler} type="button">
-                Transpile .egg
+              <button
+                className={transpilerEnabled ? 'action-button active' : 'action-button'}
+                onClick={handleToggleTranspiler}
+                type="button"
+              >
+                {transpilerEnabled ? 'Hide .egg Editor' : 'Transpile .egg'}
               </button>
               <span>{stats.lineCount} lines</span>
               <span>{stats.charCount} chars</span>
@@ -1375,60 +1448,6 @@ export default function App() {
               className="graph-zoom-content"
               dangerouslySetInnerHTML={{ __html: graphSvg }}
             />
-          </div>
-        </div>
-      ) : null}
-      {transpilerOpen ? (
-        <div className="transpiler-modal" onClick={() => setTranspilerOpen(false)}>
-          <div
-            className="transpiler-panel"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="graph-zoom-header">
-              <div>
-                <strong>.egg to eggplant</strong>
-                <p className="subtle transpiler-subtitle">
-                  Paste egglog code here. On success, the generated eggplant Rust replaces the main editor content.
-                </p>
-              </div>
-              <button className="action-button" onClick={() => setTranspilerOpen(false)} type="button">
-                Close
-              </button>
-            </div>
-            <div className="transpiler-content">
-              <label className="transpiler-field">
-                <span>.egg input</span>
-                <textarea
-                  className="transpiler-input"
-                  onChange={(event) => setTranspilerInput(event.target.value)}
-                  placeholder="Paste .egg code here"
-                  rows={14}
-                  value={transpilerInput}
-                />
-              </label>
-              <label className="transpiler-field">
-                <span>Generated eggplant preview</span>
-                <textarea
-                  className="transpiler-output"
-                  readOnly
-                  rows={14}
-                  value={transpilerOutput}
-                />
-              </label>
-            </div>
-            <div className="transpiler-footer">
-              <p className="subtle">{transpilerStatus}</p>
-              <div className="button-row">
-                <button
-                  className="action-button active"
-                  disabled={transpilerBusy}
-                  onClick={() => void handleRunTranspiler()}
-                  type="button"
-                >
-                  {transpilerBusy ? 'Transpiling…' : 'Generate Into Editor'}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       ) : null}

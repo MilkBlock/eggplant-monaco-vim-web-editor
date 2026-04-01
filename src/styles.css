@@ -94,6 +94,27 @@ select {
   margin-top: 12px;
 }
 
+.egg-editor-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 auto;
+}
+
+.egg-editor-subtitle {
+  margin: 6px 0 0;
+}
+
+.egg-editor-frame {
+  min-height: 320px;
+  flex: 1 1 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 10, 15, 0.94);
+}
+
 .sample-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -293,76 +314,6 @@ select {
   width: max-content;
   min-width: 100%;
   height: auto;
-}
-
-.transpiler-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  background: rgba(4, 6, 10, 0.78);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.transpiler-panel {
-  width: min(96vw, 1440px);
-  height: min(92vh, 980px);
-  border-radius: 18px;
-  background: rgba(12, 16, 24, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  overflow: hidden;
-}
-
-.transpiler-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16px;
-  padding: 18px;
-  min-height: 0;
-}
-
-.transpiler-field {
-  display: grid;
-  gap: 10px;
-  min-height: 0;
-  color: rgba(244, 241, 232, 0.9);
-  font-size: 13px;
-}
-
-.transpiler-input,
-.transpiler-output {
-  width: 100%;
-  min-height: 0;
-  resize: none;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(7, 10, 15, 0.94);
-  color: #f4f1e8;
-  padding: 14px 16px;
-  line-height: 1.55;
-  font-family: "Iosevka", "JetBrains Mono", "SFMono-Regular", monospace;
-}
-
-.transpiler-output {
-  color: rgba(244, 241, 232, 0.8);
-}
-
-.transpiler-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.transpiler-subtitle {
-  margin: 6px 0 0;
 }
 
 .graph-toolbar {
@@ -775,13 +726,5 @@ select {
     overflow: visible;
     min-height: auto;
     padding-right: 0;
-  }
-
-  .transpiler-content {
-    grid-template-columns: 1fr;
-  }
-
-  .transpiler-panel {
-    height: min(94vh, 1120px);
   }
 }
