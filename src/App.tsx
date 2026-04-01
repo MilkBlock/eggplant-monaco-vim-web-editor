@@ -322,7 +322,7 @@ export default function App() {
   const [vimEnabled, setVimEnabled] = useState(true);
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
-  const [transpilerEnabled, setTranspilerEnabled] = useState(false);
+  const [transpilerEnabled] = useState(true);
   const [transpilerInput, setTranspilerInput] = useState('');
   const [transpilerStatus, setTranspilerStatus] = useState('Enable the .egg editor, then type or paste egglog code.');
   const [transpilerBusy, setTranspilerBusy] = useState(false);
@@ -498,9 +498,6 @@ export default function App() {
   }, [fixture.svg, previewState.dot, refreshNonce, typstRenderings]);
 
   useEffect(() => {
-    if (!transpilerEnabled) {
-      setSource(selectedFile.source);
-    }
     setDotViewMode('combined');
     setCursorUtf16Offset(0);
     setActiveRuleScope(null);
@@ -511,7 +508,7 @@ export default function App() {
     setTypstEditorTargetId('');
     setTypstEditorValue('');
     setClipboardStatus('');
-  }, [selectedFile, transpilerEnabled]);
+  }, [selectedFile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -749,21 +746,6 @@ export default function App() {
     setRefreshNonce((value) => value + 1);
   };
 
-  const handleToggleTranspiler = () => {
-    setTranspilerEnabled((current) => {
-      const next = !current;
-      if (next) {
-        setTranspilerStatus('Edit the .egg source on the left. Rust output will refresh automatically.');
-      } else {
-        setTranspilerStatus('Enable the .egg editor, then type or paste egglog code.');
-        setTranspilerBusy(false);
-        setSource(selectedFile.source);
-        setClipboardStatus('Closed .egg editor and restored the selected Rust sample.');
-      }
-      return next;
-    });
-  };
-
   const handleCopyText = async (text: string, label: string) => {
     if (!text) {
       return;
@@ -953,66 +935,40 @@ export default function App() {
           </label>
         </div>
 
-        {transpilerEnabled ? (
-          <div className="panel egg-editor-panel">
-            <div className="panel-header">
-              <div>
-                <h2>.egg Editor</h2>
-                <p className="subtle egg-editor-subtitle">
-                  Editing here auto-generates Rust into the main editor.
-                </p>
-              </div>
-              <button className="action-button" onClick={handleToggleTranspiler} type="button">
-                Back To Samples
-              </button>
+        <div className="panel egg-editor-panel">
+          <div className="panel-header">
+            <div>
+              <h2>.egg Editor</h2>
+              <p className="subtle egg-editor-subtitle">
+                Editing here auto-generates Rust into the main editor.
+              </p>
             </div>
-            <div className="egg-editor-frame">
-              <Editor
-                defaultLanguage="plaintext"
-                language="plaintext"
-                onChange={(value) => setTranspilerInput(value ?? '')}
-                theme="vs-dark"
-                value={transpilerInput}
-                options={{
-                  automaticLayout: true,
-                  fontFamily: 'JetBrains Mono, Menlo, Monaco, monospace',
-                  fontLigatures: true,
-                  fontSize: 13,
-                  minimap: { enabled: false },
-                  padding: { top: 16, bottom: 16 },
-                  scrollBeyondLastLine: false,
-                  smoothScrolling: true,
-                  wordWrap: 'on',
-                }}
-              />
-            </div>
-            <p className="subtle">{transpilerStatus}</p>
-            {transpilerBusy ? <p className="subtle">Generating Rust...</p> : null}
-            {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
           </div>
-        ) : (
-          <>
-            <div className="panel">
-              <div className="panel-header">
-                <h2>Shared Contract</h2>
-              </div>
-              <ul className="fact-list">
-                <li>Preview interaction: `@eggplant-shared/previewCore`</li>
-                <li>Typst renderer: browser adapter over `@eggplant-shared/typstCore`</li>
-                <li>Rule checks: `@eggplant-vscode/ruleChecks`</li>
-                <li>Boundary: shell-only wiring, no contract fork</li>
-              </ul>
-            </div>
-
-            <div className="panel">
-              <div className="panel-header">
-                <h2>Rule Sync</h2>
-              </div>
-              <p className="subtle">{ruleSyncStatus}</p>
-              {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
-            </div>
-          </>
-        )}
+          <div className="egg-editor-frame">
+            <Editor
+              defaultLanguage="plaintext"
+              language="plaintext"
+              onChange={(value) => setTranspilerInput(value ?? '')}
+              theme="vs-dark"
+              value={transpilerInput}
+              options={{
+                automaticLayout: true,
+                fontFamily: 'JetBrains Mono, Menlo, Monaco, monospace',
+                fontLigatures: true,
+                fontSize: 13,
+                minimap: { enabled: false },
+                padding: { top: 16, bottom: 16 },
+                scrollBeyondLastLine: false,
+                smoothScrolling: true,
+                wordWrap: 'on',
+              }}
+            />
+          </div>
+          <p className="subtle">{transpilerStatus}</p>
+          {transpilerBusy ? <p className="subtle">Generating Rust...</p> : null}
+          <p className="subtle">{ruleSyncStatus}</p>
+          {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
+        </div>
       </aside>
 
       <main className="workspace">
@@ -1020,16 +976,9 @@ export default function App() {
           <div className="toolbar">
             <div>
               <p className="eyebrow">Editor</p>
-              <h2>{transpilerEnabled ? 'generated_from_egg.rs' : selectedFile.label}</h2>
+              <h2>generated_from_egg.rs</h2>
             </div>
             <div className="toolbar-meta">
-              <button
-                className={transpilerEnabled ? 'action-button active' : 'action-button'}
-                onClick={handleToggleTranspiler}
-                type="button"
-              >
-                {transpilerEnabled ? 'Hide .egg Editor' : 'Transpile .egg'}
-              </button>
               <span>{stats.lineCount} lines</span>
               <span>{stats.charCount} chars</span>
               <label className="editor-mode-toggle" htmlFor="vim-mode-toggle">
