@@ -38,14 +38,13 @@ select {
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(9, 12, 18, 0.78);
   backdrop-filter: blur(18px);
-  padding: 28px 20px;
+  padding: 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   overflow: auto;
 }
 
-.brand-block h1,
 .toolbar h2,
 .panel-header h2,
 .preview-card h3 {
@@ -87,13 +86,6 @@ select {
   color: rgba(244, 241, 232, 0.62);
 }
 
-.sample-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
-}
-
 .egg-editor-panel {
   min-height: 0;
   display: flex;
@@ -115,29 +107,24 @@ select {
   background: rgba(7, 10, 15, 0.94);
 }
 
-.sample-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  color: inherit;
-  padding: 14px;
-  text-align: left;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sample-card.active {
-  border-color: rgba(255, 191, 105, 0.55);
-  background: rgba(255, 191, 105, 0.12);
-}
-
-.sample-card span,
 .fact-list li,
 .preview-card p {
   color: rgba(244, 241, 232, 0.75);
   line-height: 1.5;
+}
+
+.sample-select-wrap {
+  display: block;
+  margin-top: 12px;
+}
+
+.sample-select {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f4f1e8;
+  padding: 10px 12px;
 }
 
 .fact-list {

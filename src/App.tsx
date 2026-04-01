@@ -934,33 +934,23 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand-block">
-          <p className="eyebrow">Eggplant</p>
-          <h1>Shared Core Web Shell</h1>
-          <p className="subtle">
-            Monaco + Vim on the left. On the right, a browser host shell driven by the same
-            preview and typst contracts extracted from the VSCode plugin.
-          </p>
-        </div>
-
         <div className="panel">
           <div className="panel-header">
-            <h2>Samples</h2>
-            <span>{sampleFiles.length}</span>
+            <h2>Demo</h2>
           </div>
-          <div className="sample-list">
-            {sampleFiles.map((file) => (
-              <button
-                key={file.id}
-                className={file.id === selectedId ? 'sample-card active' : 'sample-card'}
-                onClick={() => handleSelectSample(file.id)}
-                type="button"
-              >
-                <strong>{file.label}</strong>
-                <span>{file.description}</span>
-              </button>
-            ))}
-          </div>
+          <label className="sample-select-wrap">
+            <select
+              className="sample-select"
+              onChange={(event) => handleSelectSample(event.target.value)}
+              value={selectedId}
+            >
+              {sampleFiles.map((file) => (
+                <option key={file.id} value={file.id}>
+                  {file.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {transpilerEnabled ? (
