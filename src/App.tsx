@@ -1578,6 +1578,7 @@ export default function App() {
             </div>
             <div
               className="graph-zoom-content"
+              onClick={handleGraphClick}
               dangerouslySetInnerHTML={{ __html: graphSvg }}
             />
           </div>
