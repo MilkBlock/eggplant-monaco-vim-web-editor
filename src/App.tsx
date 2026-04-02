@@ -106,6 +106,17 @@ type GraphContextMenuState = {
 
 type MonacoEditorInstance = Parameters<OnMount>[0];
 
+type RangeLike = {
+  start: number;
+  end: number;
+};
+
+type EggRuleMapping = {
+  eggRuleRanges: RangeLike[];
+  rustRuleCallOffsets: number[];
+  generatedRust: string;
+};
+
 const closedGraphContextMenu: GraphContextMenuState = {
   open: false,
   x: 0,
@@ -129,6 +140,115 @@ function countKeywordHits(source: string) {
 function utf16OffsetToUtf8ByteOffset(source: string, utf16Offset: number): number {
   const clampedOffset = Math.max(0, Math.min(source.length, utf16Offset));
   return utf8Encoder.encode(source.slice(0, clampedOffset)).length;
+}
+
+function utf8ByteOffsetToUtf16Offset(source: string, byteOffset: number): number {
+  const bytes = Math.max(0, byteOffset);
+  let utf16Offset = 0;
+  let consumed = 0;
+  for (const char of source) {
+    const next = consumed + utf8Encoder.encode(char).length;
+    if (next > bytes) {
+      break;
+    }
+    consumed = next;
+    utf16Offset += char.length;
+  }
+  return utf16Offset;
+}
+
+function collectRuleCallOffsets(source: string): number[] {
+  return Array.from(source.matchAll(/add_rule(?:_with_hook)?\s*\(/g)).map((match) => match.index ?? 0);
+}
+
+function findMatchingParenRange(source: string, startOffset: number): RangeLike | null {
+  let depth = 0;
+  let inString = false;
+  let inComment = false;
+  let escapeNext = false;
+
+  for (let index = startOffset; index < source.length; index += 1) {
+    const char = source[index];
+
+    if (inComment) {
+      if (char === '\n') {
+        inComment = false;
+      }
+      continue;
+    }
+
+    if (inString) {
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === ';') {
+      inComment = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+    if (char === '(') {
+      depth += 1;
+      continue;
+    }
+    if (char === ')') {
+      depth -= 1;
+      if (depth === 0) {
+        return { start: startOffset, end: index + 1 };
+      }
+    }
+  }
+
+  return null;
+}
+
+function collectEggRuleRanges(source: string): RangeLike[] {
+  const starts = Array.from(source.matchAll(/\((?:rewrite|birewrite|rule)\b/g)).map((match) => match.index ?? 0);
+  return starts
+    .map((start) => findMatchingParenRange(source, start))
+    .filter((range): range is RangeLike => range !== null);
+}
+
+function resolveSourceSpan(ir: PatternIr, targetId: string): RangeLike | null {
+  const node = ir.nodes.find((entry) => entry.id === targetId);
+  if (node) {
+    return node.range;
+  }
+  if (targetId.startsWith('constraint:')) {
+    return ir.constraints.find((entry) => `constraint:${entry.id}` === targetId)?.range ?? null;
+  }
+  if (targetId.startsWith('effect:')) {
+    return ir.action_effects.find((entry) => `effect:${entry.id}` === targetId)?.range ?? null;
+  }
+  if (targetId.startsWith('seed:')) {
+    return ir.seed_facts.find((entry) => `seed:${entry.id}` === targetId)?.range ?? null;
+  }
+  return null;
+}
+
+function findRuleOrdinalAtRustOffset(offset: number, ruleOffsets: number[]): number {
+  let ordinal = 0;
+  for (let index = 0; index < ruleOffsets.length; index += 1) {
+    if (ruleOffsets[index] <= offset) {
+      ordinal = index;
+    } else {
+      break;
+    }
+  }
+  return ordinal;
 }
 
 function scopeLabelFromIr(ir: PatternIr): string {
@@ -326,12 +446,14 @@ export default function App() {
   const [transpilerInput, setTranspilerInput] = useState('');
   const [transpilerStatus, setTranspilerStatus] = useState('Enable the .egg editor, then type or paste egglog code.');
   const [transpilerBusy, setTranspilerBusy] = useState(false);
+  const [eggRuleMapping, setEggRuleMapping] = useState<EggRuleMapping | null>(null);
   const [typstEditorTargetId, setTypstEditorTargetId] = useState('');
   const [typstEditorValue, setTypstEditorValue] = useState('');
   const [refreshNonce, setRefreshNonce] = useState(0);
   const statusRef = useRef<HTMLDivElement | null>(null);
   const graphPreviewRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<MonacoEditorInstance | null>(null);
+  const eggEditorRef = useRef<MonacoEditorInstance | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
   const cursorListenerRef = useRef<{ dispose: () => void } | null>(null);
 
@@ -590,6 +712,7 @@ export default function App() {
       vimModeRef.current?.dispose();
       vimModeRef.current = null;
       editorRef.current = null;
+      eggEditorRef.current = null;
     };
   }, []);
 
@@ -690,10 +813,72 @@ export default function App() {
     editor.focus();
   };
 
+  const handleEggEditorMount: OnMount = (editor) => {
+    eggEditorRef.current = editor;
+  };
+
   const handleSelectSample = (sampleId: string) => {
     startTransition(() => {
       setSelectedId(sampleId);
     });
+  };
+
+  const revealRangeInEditor = (
+    editor: MonacoEditorInstance | null,
+    sourceText: string,
+    range: RangeLike,
+  ) => {
+    if (!editor) {
+      return;
+    }
+    const model = editor.getModel();
+    if (!model) {
+      return;
+    }
+    const startOffset = utf8ByteOffsetToUtf16Offset(sourceText, range.start);
+    const endOffset = utf8ByteOffsetToUtf16Offset(sourceText, range.end);
+    const startPosition = model.getPositionAt(startOffset);
+    const endPosition = model.getPositionAt(endOffset);
+    editor.setSelection({
+      startLineNumber: startPosition.lineNumber,
+      startColumn: startPosition.column,
+      endLineNumber: endPosition.lineNumber,
+      endColumn: endPosition.column,
+    });
+    editor.revealLineInCenter(startPosition.lineNumber);
+    editor.focus();
+  };
+
+  const revealRuleSourceForEggMode = () => {
+    if (!eggRuleMapping || !activeRuleScope || source !== eggRuleMapping.generatedRust) {
+      return false;
+    }
+    const rustRuleOrdinal = findRuleOrdinalAtRustOffset(
+      activeRuleScope.ir.scope.text_range.start,
+      eggRuleMapping.rustRuleCallOffsets,
+    );
+    const eggRuleRange = eggRuleMapping.eggRuleRanges[rustRuleOrdinal];
+    if (!eggRuleRange) {
+      return false;
+    }
+    revealRangeInEditor(eggEditorRef.current, transpilerInput, eggRuleRange);
+    setClipboardStatus(`Jumped to .egg rule ${rustRuleOrdinal + 1}.`);
+    return true;
+  };
+
+  const revealTargetSource = (targetId: string) => {
+    if (resolveSourceSpan(fixture.ir, targetId) && !revealRuleSourceForEggMode()) {
+      const span = resolveSourceSpan(fixture.ir, targetId);
+      if (span) {
+        revealRangeInEditor(editorRef.current, source, span);
+        setClipboardStatus(`Jumped to ${targetId} in generated Rust.`);
+        return;
+      }
+    }
+    if (revealRuleSourceForEggMode()) {
+      return;
+    }
+    setClipboardStatus(`No source link available for ${targetId}.`);
   };
 
   const handleNodeDrilldown = (targetId: string) => {
@@ -711,6 +896,7 @@ export default function App() {
       return;
     }
     handleNodeDrilldown(targetId);
+    revealTargetSource(targetId);
     setGraphContextMenu(closedGraphContextMenu);
   };
 
@@ -890,6 +1076,11 @@ export default function App() {
           if (cancelled) {
             return;
           }
+          setEggRuleMapping({
+            eggRuleRanges: collectEggRuleRanges(nextInput),
+            rustRuleCallOffsets: collectRuleCallOffsets(generated),
+            generatedRust: generated,
+          });
           setSource(generated);
           setClipboardStatus('Updated generated Rust from the left .egg editor.');
           setTranspilerStatus('Transpile succeeded. Generated Rust refreshed in the main editor.');
@@ -897,6 +1088,7 @@ export default function App() {
           if (cancelled) {
             return;
           }
+          setEggRuleMapping(null);
           const message = error instanceof Error ? error.message : String(error);
           setTranspilerStatus(`Transpile failed: ${message}`);
         } finally {
@@ -949,6 +1141,7 @@ export default function App() {
               defaultLanguage="plaintext"
               language="plaintext"
               onChange={(value) => setTranspilerInput(value ?? '')}
+              onMount={handleEggEditorMount}
               theme="vs-dark"
               value={transpilerInput}
               options={{
