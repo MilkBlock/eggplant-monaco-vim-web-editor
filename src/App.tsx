@@ -926,6 +926,18 @@ export default function App() {
     setGraphZoomOpen(true);
   };
 
+  const handleGraphZoomDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const targetId = findGraphNodeTargetId(event.target);
+    if (!targetId) {
+      return;
+    }
+    handleNodeDrilldown(targetId);
+    revealTargetSource(targetId);
+    setGraphContextMenu(closedGraphContextMenu);
+    setGraphZoomOpen(false);
+  };
+
   const handleRefresh = () => {
     setClipboardStatus('Refreshing extractor, typst, and graph layout...');
     setGraphContextMenu(closedGraphContextMenu);
@@ -1579,6 +1591,7 @@ export default function App() {
             <div
               className="graph-zoom-content"
               onClick={handleGraphClick}
+              onDoubleClick={handleGraphZoomDoubleClick}
               dangerouslySetInnerHTML={{ __html: graphSvg }}
             />
           </div>
