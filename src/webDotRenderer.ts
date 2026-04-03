@@ -201,6 +201,26 @@ function collectNodeTextNodes(nodeGroup: Element): SVGTextElement[] {
   );
 }
 
+function extractTextBandBounds(textNodes: SVGTextElement[], fallback: NodeBounds): NodeBounds {
+  if (textNodes.length === 0) {
+    return fallback;
+  }
+
+  const primary = textNodes[0];
+  const primaryY = numberAttr(primary, 'y', fallback.y + fallback.height / 2);
+  const fontSize = numberAttr(primary, 'font-size', 14);
+  const nextY = textNodes.length > 1 ? numberAttr(textNodes[1], 'y', primaryY + fontSize * 1.35) : primaryY + fontSize * 1.8;
+  const bandTop = primaryY - fontSize * 1.15;
+  const bandBottom = textNodes.length > 1 ? primaryY + (nextY - primaryY) * 0.55 : primaryY + fontSize * 0.7;
+
+  return {
+    x: fallback.x,
+    y: Math.max(fallback.y, bandTop),
+    width: fallback.width,
+    height: Math.max(fontSize * 1.4, bandBottom - bandTop),
+  };
+}
+
 function applyNodeRenderings(
   root: SVGElement,
   typstRenderings: Record<string, RenderedTypstSnippet>,
@@ -227,13 +247,15 @@ function applyNodeRenderings(
     }
 
     const bounds = extractNodeBounds(nodeGroup);
-    const overlay = bounds ? createInlineTypstSvg(root.ownerDocument, rendered, bounds) : null;
+    const overlayBounds = bounds ? extractTextBandBounds(textNodes, bounds) : null;
+    const overlay = overlayBounds ? createInlineTypstSvg(root.ownerDocument, rendered, overlayBounds) : null;
     if (!overlay) {
       continue;
     }
 
-    for (const textNode of textNodes) {
-      textNode.remove();
+    const primaryTextNode = textNodes[0];
+    if (primaryTextNode) {
+      primaryTextNode.remove();
     }
     nodeGroup.appendChild(overlay);
     overlayCount += 1;
