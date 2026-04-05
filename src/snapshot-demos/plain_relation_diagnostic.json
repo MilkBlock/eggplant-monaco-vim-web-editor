@@ -1,0 +1,172 @@
+{
+  "snapshot_version": 1,
+  "format": "eggplant.persisted-snapshot",
+  "profile": "eggplant-common-path-v1",
+  "producer": {
+    "crate": "eggplant",
+    "version": "0.2.7"
+  },
+  "source_schema": {
+    "engine_fingerprint": "d46151796f51fc24a898903a162e27bd85117747ba1abafb2f9ee38a8d0a5adf",
+    "dsl_runtime_fingerprint": "5c5f67c46cbb5de2890f700f9030acee9ea2bae70560d8d5785d6eebdc4a7bfd",
+    "dsl_metadata_fingerprint": "93ecdb1fd621f319d40096a1d5550c30a7b579a4d9e647b100d04741cf69d0cc",
+    "macro_rev": "eggplant-dsl-schema-v1"
+  },
+  "dictionary": {
+    "strings": [],
+    "symbols": [],
+    "sorts": [
+      "@edgeSort",
+      "BigInt",
+      "BigRat",
+      "String",
+      "Unit",
+      "bool",
+      "f64",
+      "i64"
+    ],
+    "ops": [
+      "edge"
+    ],
+    "rulesets": []
+  },
+  "schema": {
+    "sort_decls": [
+      {
+        "sort_id": 0,
+        "name": "@edgeSort",
+        "kind": "eqsort",
+        "metadata": null
+      },
+      {
+        "sort_id": 1,
+        "name": "BigInt",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 2,
+        "name": "BigRat",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 3,
+        "name": "String",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 4,
+        "name": "Unit",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 5,
+        "name": "bool",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 6,
+        "name": "f64",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 7,
+        "name": "i64",
+        "kind": "primitive",
+        "metadata": null
+      }
+    ],
+    "function_decls": [],
+    "constructor_decls": [
+      {
+        "op_id": 0,
+        "name": "edge",
+        "input_sort_ids": [
+          7,
+          7
+        ],
+        "output_sort_id": 0,
+        "is_relation": false,
+        "merge": null,
+        "cost": null
+      }
+    ],
+    "ruleset_decls": []
+  },
+  "state": {
+    "facts": [],
+    "function_rows": [
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 7,
+            "value": {
+              "tag": "i64",
+              "value": "1",
+              "machine_value": 1
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 7,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 0,
+          "logical_id": "v0"
+        }
+      }
+    ],
+    "unions": [],
+    "runs": [],
+    "fresh_id_cursor": null
+  },
+  "restore_mapping": {
+    "value_ids": [
+      {
+        "logical_id": "v0",
+        "sort_id": 0,
+        "debug_value": "(edge 1 2)"
+      }
+    ],
+    "notes": [
+      "logical_id values are snapshot-local and must be remapped during import",
+      "runtime ids, hashes, and class ids are intentionally excluded from persisted semantic state"
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "unsupported-feature",
+      "message": "v1 exporter does not yet persist union history; state.unions is empty",
+      "path": "state.unions"
+    },
+    {
+      "code": "unsupported-feature",
+      "message": "v1 exporter does not yet persist run scheduling history; state.runs is empty",
+      "path": "state.runs"
+    },
+    {
+      "code": "unsupported-feature",
+      "message": "persisted ruleset declarations are provenance-only metadata in v1; restore ignores them and they do not imply rule body/run replay semantics",
+      "path": "schema.ruleset_decls"
+    },
+    {
+      "code": "plain-source-non-goal",
+      "message": "v1 does not treat plain/non-eggplant relation-like source `edge` as supported fact-classification; 1 row(s) remain outside the `state.facts` contract and are exported without relation-fact guarantees",
+      "path": "state.plain_source_relation_like.edge"
+    }
+  ]
+}

@@ -36,6 +36,9 @@ import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
 import mathMicrobenchmarkSource from './samples/math_microbenchmark.rs?raw';
 import complexSource from './samples/complex.rs?raw';
+import constructorRowsSnapshotSource from './snapshot-demos/constructor_rows.json?raw';
+import unitFunctionRowsSnapshotSource from './snapshot-demos/unit_function_rows.json?raw';
+import plainRelationDiagnosticSnapshotSource from './snapshot-demos/plain_relation_diagnostic.json?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
@@ -55,6 +58,13 @@ type PreviewFixture = {
   svg: string;
   ir: PatternIr;
   typstSources: Record<string, string>;
+};
+
+type SnapshotDemo = {
+  id: string;
+  label: string;
+  description: string;
+  source: string;
 };
 
 const sampleFiles: SampleFile[] = [
@@ -87,6 +97,27 @@ const sampleFiles: SampleFile[] = [
     label: 'relation.rs',
     description: 'Relation/path sample with seed and extend rules.',
     source: relationSource,
+  },
+];
+
+const snapshotDemos: SnapshotDemo[] = [
+  {
+    id: 'constructor_rows',
+    label: 'constructor_rows.json',
+    description: 'Constructor/function-row heavy snapshot from a real egraph run.',
+    source: constructorRowsSnapshotSource,
+  },
+  {
+    id: 'unit_function_rows',
+    label: 'unit_function_rows.json',
+    description: 'No-merge Unit function rows from a real egraph run.',
+    source: unitFunctionRowsSnapshotSource,
+  },
+  {
+    id: 'plain_relation_diagnostic',
+    label: 'plain_relation_diagnostic.json',
+    description: 'Plain relation snapshot showing restore coverage diagnostics.',
+    source: plainRelationDiagnosticSnapshotSource,
   },
 ];
 
@@ -445,6 +476,7 @@ export default function App() {
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
+  const [selectedSnapshotDemoId, setSelectedSnapshotDemoId] = useState(snapshotDemos[0]?.id ?? '');
   const [snapshotInput, setSnapshotInput] = useState('');
   const [snapshotStatus, setSnapshotStatus] = useState('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
   const [snapshotModel, setSnapshotModel] = useState<SnapshotInspectorModel | null>(null);
@@ -467,6 +499,10 @@ export default function App() {
   const selectedFile = useMemo(
     () => sampleFiles.find((file) => file.id === selectedId) ?? sampleFiles[0],
     [selectedId],
+  );
+  const selectedSnapshotDemo = useMemo(
+    () => snapshotDemos.find((demo) => demo.id === selectedSnapshotDemoId) ?? snapshotDemos[0] ?? null,
+    [selectedSnapshotDemoId],
   );
   const cursorByteOffset = useMemo(
     () => utf16OffsetToUtf8ByteOffset(source, cursorUtf16Offset),
@@ -629,6 +665,13 @@ export default function App() {
       cancelled = true;
     };
   }, [snapshotMode, snapshotModel]);
+
+  useEffect(() => {
+    if (!snapshotMode || !selectedSnapshotDemo) {
+      return;
+    }
+    setSnapshotInput(selectedSnapshotDemo.source);
+  }, [selectedSnapshotDemo, snapshotMode]);
 
   useEffect(() => {
     const nextInput = snapshotInput.trim();
@@ -1251,6 +1294,20 @@ export default function App() {
             <div className="panel-header">
               <h2>Persisted Snapshot</h2>
             </div>
+            <label className="sample-select-wrap">
+              <select
+                className="sample-select"
+                onChange={(event) => setSelectedSnapshotDemoId(event.target.value)}
+                value={selectedSnapshotDemoId}
+              >
+                {snapshotDemos.map((demo) => (
+                  <option key={demo.id} value={demo.id}>
+                    {demo.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {selectedSnapshotDemo ? <p className="subtle">{selectedSnapshotDemo.description}</p> : null}
             <textarea
               className="typst-override-input snapshot-input"
               onChange={(event) => setSnapshotInput(event.target.value)}
