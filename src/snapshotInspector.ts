@@ -1,0 +1,337 @@
+export type PersistedSnapshotSortDecl = {
+  sort_id: number;
+  name: string;
+  kind: string;
+  metadata?: unknown;
+};
+
+export type PersistedSnapshotFunctionDecl = {
+  op_id: number;
+  name: string;
+  input_sort_ids: number[];
+  output_sort_id: number;
+  is_relation: boolean;
+  merge?: string | null;
+  cost?: number | null;
+};
+
+export type PersistedSnapshotValue =
+  | {
+      kind: 'lit';
+      sort_id: number;
+      value: {
+        tag: string;
+        value: string;
+        machine_value?: unknown;
+      };
+    }
+  | {
+      kind: 'ref';
+      sort_id: number;
+      logical_id: string;
+    };
+
+export type PersistedSnapshotFact = {
+  op_id: number;
+  inputs: PersistedSnapshotValue[];
+};
+
+export type PersistedSnapshotFunctionRow = {
+  op_id: number;
+  inputs: PersistedSnapshotValue[];
+  output: PersistedSnapshotValue;
+};
+
+export type PersistedSnapshotUnion = {
+  sort_id: number;
+  lhs: PersistedSnapshotValue;
+  rhs: PersistedSnapshotValue;
+  reason?: string | null;
+};
+
+export type PersistedSnapshotRun = {
+  ruleset_id: number;
+  sequence_no: number;
+  until?: string | null;
+  node_limit?: number | null;
+  time_limit_ms?: number | null;
+};
+
+export type PersistedSnapshotValueId = {
+  logical_id: string;
+  sort_id: number;
+  debug_value?: string | null;
+};
+
+export type PersistedSnapshot = {
+  snapshot_version: number;
+  format: string;
+  profile: string;
+  producer?: {
+    crate_name: string;
+    version: string;
+  } | null;
+  dictionary: {
+    sorts: string[];
+    ops: string[];
+    symbols?: string[];
+    strings?: string[];
+  };
+  schema: {
+    sort_decls: PersistedSnapshotSortDecl[];
+    function_decls: PersistedSnapshotFunctionDecl[];
+    constructor_decls: PersistedSnapshotFunctionDecl[];
+    ruleset_decls: Array<{ ruleset_id: number; name: string }>;
+  };
+  state: {
+    facts: PersistedSnapshotFact[];
+    function_rows: PersistedSnapshotFunctionRow[];
+    unions: PersistedSnapshotUnion[];
+    runs: PersistedSnapshotRun[];
+    fresh_id_cursor?: number | null;
+  };
+  restore_mapping: {
+    value_ids: PersistedSnapshotValueId[];
+    notes: string[];
+  };
+  diagnostics: Array<{
+    code: string;
+    message: string;
+    path?: string | null;
+  }>;
+};
+
+type SnapshotClassNode = {
+  id: string;
+  sortName: string;
+  memberLabels: string[];
+  memberCount: number;
+};
+
+type SnapshotOpNode = {
+  id: string;
+  label: string;
+  detail: string;
+};
+
+export type SnapshotInspectorModel = {
+  snapshot: PersistedSnapshot;
+  dot: string;
+  classNodes: SnapshotClassNode[];
+  opNodes: SnapshotOpNode[];
+  stats: {
+    classCount: number;
+    valueIdCount: number;
+    factCount: number;
+    functionRowCount: number;
+    unionCount: number;
+    runCount: number;
+    diagnosticCount: number;
+  };
+};
+
+function quote(value: string): string {
+  return JSON.stringify(value);
+}
+
+function valueKey(value: PersistedSnapshotValue): string {
+  if (value.kind === 'ref') {
+    return `ref:${value.sort_id}:${value.logical_id}`;
+  }
+  return `lit:${value.sort_id}:${value.value.tag}:${value.value.value}`;
+}
+
+function opName(opId: number, opsById: Map<number, PersistedSnapshotFunctionDecl>): string {
+  return opsById.get(opId)?.name ?? `op#${opId}`;
+}
+
+function unionFind(values: string[]): Map<string, string> {
+  const parent = new Map<string, string>();
+  for (const value of values) {
+    parent.set(value, value);
+  }
+  const find = (value: string): string => {
+    const current = parent.get(value) ?? value;
+    if (current === value) {
+      parent.set(value, current);
+      return current;
+    }
+    const root = find(current);
+    parent.set(value, root);
+    return root;
+  };
+  const unite = (left: string, right: string) => {
+    const leftRoot = find(left);
+    const rightRoot = find(right);
+    if (leftRoot !== rightRoot) {
+      parent.set(rightRoot, leftRoot);
+    }
+  };
+  (unionFind as unknown as { unite?: typeof unite; find?: typeof find }).unite = unite;
+  (unionFind as unknown as { unite?: typeof unite; find?: typeof find }).find = find;
+  return parent;
+}
+
+export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): SnapshotInspectorModel {
+  const sortNames = new Map(snapshot.schema.sort_decls.map((decl) => [decl.sort_id, decl.name] as const));
+  const opsById = new Map(
+    [...snapshot.schema.function_decls, ...snapshot.schema.constructor_decls].map((decl) => [decl.op_id, decl] as const),
+  );
+  const debugByLogicalId = new Map(
+    snapshot.restore_mapping.value_ids.map((valueId) => [
+      valueId.logical_id,
+      valueId.debug_value ?? `${sortNames.get(valueId.sort_id) ?? 'sort'}:${valueId.logical_id}`,
+    ]),
+  );
+
+  const allKeys = new Set<string>();
+  const rememberValue = (value: PersistedSnapshotValue) => {
+    allKeys.add(valueKey(value));
+  };
+  snapshot.restore_mapping.value_ids.forEach((entry) =>
+    allKeys.add(`ref:${entry.sort_id}:${entry.logical_id}`),
+  );
+  snapshot.state.facts.forEach((fact) => fact.inputs.forEach(rememberValue));
+  snapshot.state.function_rows.forEach((row) => {
+    row.inputs.forEach(rememberValue);
+    rememberValue(row.output);
+  });
+  snapshot.state.unions.forEach((union) => {
+    rememberValue(union.lhs);
+    rememberValue(union.rhs);
+  });
+
+  const uf = unionFind(Array.from(allKeys));
+  const find = (value: string) => {
+    const parent = uf.get(value) ?? value;
+    if (parent === value) {
+      return value;
+    }
+    let root = parent;
+    while ((uf.get(root) ?? root) !== root) {
+      root = uf.get(root) ?? root;
+    }
+    return root;
+  };
+  const unite = (left: string, right: string) => {
+    const leftRoot = find(left);
+    const rightRoot = find(right);
+    if (leftRoot !== rightRoot) {
+      uf.set(rightRoot, leftRoot);
+    }
+  };
+  snapshot.state.unions.forEach((union) => {
+    unite(valueKey(union.lhs), valueKey(union.rhs));
+  });
+
+  const classMembers = new Map<string, string[]>();
+  Array.from(allKeys).forEach((key) => {
+    const root = find(key);
+    const members = classMembers.get(root) ?? [];
+    members.push(key);
+    classMembers.set(root, members);
+  });
+
+  const classIdByValueKey = new Map<string, string>();
+  const classNodes: SnapshotClassNode[] = Array.from(classMembers.entries()).map(([, members], index) => {
+    const memberLabels = members.map((member) => {
+      if (member.startsWith('ref:')) {
+        const [, sortIdText, logicalId] = member.split(':');
+        return debugByLogicalId.get(logicalId) ?? `${sortNames.get(Number(sortIdText)) ?? 'sort'}:${logicalId}`;
+      }
+      const [, sortIdText, tag, ...rest] = member.split(':');
+      return `${sortNames.get(Number(sortIdText)) ?? 'sort'} ${tag} ${rest.join(':')}`;
+    });
+    const sortName = members[0]?.startsWith('ref:')
+      ? sortNames.get(Number(members[0].split(':')[1])) ?? 'sort'
+      : sortNames.get(Number(members[0]?.split(':')[1] ?? -1)) ?? 'sort';
+    const id = `class:${index}`;
+    members.forEach((member) => classIdByValueKey.set(member, id));
+    return {
+      id,
+      sortName,
+      memberLabels,
+      memberCount: members.length,
+    };
+  });
+
+  const opNodes: SnapshotOpNode[] = [];
+  const lines = [
+    'digraph PersistedSnapshot {',
+    '  rankdir=LR;',
+    '  graph [pad=0.3, nodesep=0.45, ranksep=0.7];',
+    '  node [shape=box, style="rounded,filled", fillcolor="#f6f2e8", color="#6b5b3e", fontname="Helvetica"];',
+    '  edge [color="#7a7468"];',
+  ];
+
+  classNodes.forEach((classNode) => {
+    const preview = classNode.memberLabels.slice(0, 3).join('\\n');
+    const suffix = classNode.memberCount > 3 ? `\\n... +${classNode.memberCount - 3} more` : '';
+    lines.push(
+      `  ${quote(classNode.id)} [label=${quote(`${classNode.sortName}\\n${preview}${suffix}`)}, shape=ellipse, fillcolor="#fff7df", color="#c26d00"];`,
+    );
+  });
+
+  snapshot.state.function_rows.forEach((row, index) => {
+    const opId = `row:${index}`;
+    const label = opName(row.op_id, opsById);
+    const detail = `${label}(${row.inputs.length})`;
+    opNodes.push({ id: opId, label, detail });
+    lines.push(`  ${quote(opId)} [label=${quote(`${label}\\nfunction row`)}, fillcolor="#e9f2ff", color="#4a6fa5"];`);
+    row.inputs.forEach((input, inputIndex) => {
+      const classId = classIdByValueKey.get(valueKey(input));
+      if (classId) {
+        lines.push(`  ${quote(classId)} -> ${quote(opId)} [label=${quote(String(inputIndex))}];`);
+      }
+    });
+    const outputClassId = classIdByValueKey.get(valueKey(row.output));
+    if (outputClassId) {
+      lines.push(`  ${quote(opId)} -> ${quote(outputClassId)} [label="out"];`);
+    }
+  });
+
+  snapshot.state.facts.forEach((fact, index) => {
+    const opId = `fact:${index}`;
+    const label = opName(fact.op_id, opsById);
+    const detail = `${label}(${fact.inputs.length})`;
+    opNodes.push({ id: opId, label, detail });
+    lines.push(`  ${quote(opId)} [label=${quote(`${label}\\nrelation fact`)}, fillcolor="#eef8ef", color="#4a7d63"];`);
+    fact.inputs.forEach((input, inputIndex) => {
+      const classId = classIdByValueKey.get(valueKey(input));
+      if (classId) {
+        lines.push(`  ${quote(classId)} -> ${quote(opId)} [label=${quote(String(inputIndex))}];`);
+      }
+    });
+  });
+
+  snapshot.state.unions.forEach((union, index) => {
+    const unionId = `union:${index}`;
+    lines.push(`  ${quote(unionId)} [label=${quote(`union\\n${union.reason ?? 'equivalence'}`)}, shape=note, fillcolor="#fff0e8", color="#a55d35"];`);
+    const leftClassId = classIdByValueKey.get(valueKey(union.lhs));
+    const rightClassId = classIdByValueKey.get(valueKey(union.rhs));
+    if (leftClassId) {
+      lines.push(`  ${quote(leftClassId)} -> ${quote(unionId)} [style=dashed, label="lhs"];`);
+    }
+    if (rightClassId) {
+      lines.push(`  ${quote(rightClassId)} -> ${quote(unionId)} [style=dashed, label="rhs"];`);
+    }
+  });
+
+  lines.push('}');
+
+  return {
+    snapshot,
+    dot: lines.join('\n'),
+    classNodes,
+    opNodes,
+    stats: {
+      classCount: classNodes.length,
+      valueIdCount: snapshot.restore_mapping.value_ids.length,
+      factCount: snapshot.state.facts.length,
+      functionRowCount: snapshot.state.function_rows.length,
+      unionCount: snapshot.state.unions.length,
+      runCount: snapshot.state.runs.length,
+      diagnosticCount: snapshot.diagnostics.length,
+    },
+  };
+}

@@ -38,6 +38,7 @@ import mathMicrobenchmarkSource from './samples/math_microbenchmark.rs?raw';
 import complexSource from './samples/complex.rs?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
+import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
 import { transpileEggSource } from './webTranspiler';
 
 type SampleFile = {
@@ -443,6 +444,11 @@ export default function App() {
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [snapshotMode, setSnapshotMode] = useState(false);
+  const [snapshotInput, setSnapshotInput] = useState('');
+  const [snapshotStatus, setSnapshotStatus] = useState('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
+  const [snapshotModel, setSnapshotModel] = useState<SnapshotInspectorModel | null>(null);
+  const [snapshotGraphSvg, setSnapshotGraphSvg] = useState('');
   const [transpilerEnabled] = useState(true);
   const [transpilerInput, setTranspilerInput] = useState('');
   const [transpilerStatus, setTranspilerStatus] = useState('Enable the .egg editor, then type or paste egglog code.');
@@ -580,8 +586,80 @@ export default function App() {
   );
 
   useEffect(() => {
+    if (snapshotMode || !snapshotModel) {
+      return;
+    }
+    setSnapshotGraphSvg('');
+  }, [snapshotMode, snapshotModel]);
+
+  useEffect(() => {
+    if (!snapshotMode) {
+      return;
+    }
+    if (!snapshotModel) {
+      setSnapshotGraphSvg('');
+      setGraphLayoutStatus('Snapshot graph: waiting for valid PersistedSnapshot JSON...');
+      return;
+    }
+
     let cancelled = false;
     const startedAt = performance.now();
+    setGraphLayoutStatus('Snapshot graph: running Graphviz dot...');
+    void (async () => {
+      try {
+        const svg = await renderDotToSvg(snapshotModel.dot);
+        if (cancelled) {
+          return;
+        }
+        setSnapshotGraphSvg(svg);
+        setGraphLayoutStatus(
+          `Snapshot graph rendered in ${(performance.now() - startedAt).toFixed(0)}ms.`,
+        );
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        setSnapshotGraphSvg('');
+        setGraphLayoutStatus(`Snapshot graph failed: ${message}`);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [snapshotMode, snapshotModel]);
+
+  useEffect(() => {
+    const nextInput = snapshotInput.trim();
+    if (!nextInput) {
+      setSnapshotModel(null);
+      setSnapshotStatus('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(nextInput);
+      const model = buildSnapshotInspectorModel(parsed);
+      setSnapshotModel(model);
+      setSnapshotStatus(
+        `Loaded snapshot with ${model.stats.classCount} equivalence class node(s), ${model.stats.functionRowCount} function row(s), and ${model.stats.factCount} fact row(s).`,
+      );
+    } catch (error) {
+      setSnapshotModel(null);
+      const message = error instanceof Error ? error.message : String(error);
+      setSnapshotStatus(`Snapshot parse failed: ${message}`);
+    }
+  }, [snapshotInput]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const startedAt = performance.now();
+
+    if (snapshotMode) {
+      return () => {
+        cancelled = true;
+      };
+    }
 
     setGraphSvg(fixture.svg);
     setGraphLayoutStatus('Graph layout: running Graphviz dot...');
@@ -892,6 +970,9 @@ export default function App() {
   };
 
   const handleGraphClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (snapshotMode) {
+      return;
+    }
     const targetId = findGraphNodeTargetId(event.target);
     if (!targetId) {
       return;
@@ -941,6 +1022,17 @@ export default function App() {
       nextFocusMode
         ? 'Entered Focus Mode. Graph pane now owns the inspector area.'
         : 'Exited Focus Mode.',
+    );
+  };
+
+  const handleToggleSnapshotMode = () => {
+    setSnapshotMode((value) => !value);
+    setFocusMode(false);
+    setGraphContextMenu(closedGraphContextMenu);
+    setClipboardStatus(
+      snapshotMode
+        ? 'Exited Snapshot Inspector.'
+        : 'Entered Snapshot Inspector. Graph now shows persisted egraph classes and rows.',
     );
   };
 
@@ -1197,6 +1289,27 @@ export default function App() {
           <p className="subtle">{ruleSyncStatus}</p>
           {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
         </div>
+
+        <div className="panel">
+          <div className="panel-header">
+            <h2>Persisted Snapshot</h2>
+            <button
+              className={snapshotMode ? 'action-button active' : 'action-button'}
+              onClick={handleToggleSnapshotMode}
+              type="button"
+            >
+              {snapshotMode ? 'Exit Snapshot' : 'Snapshot Inspector'}
+            </button>
+          </div>
+          <textarea
+            className="typst-override-input"
+            onChange={(event) => setSnapshotInput(event.target.value)}
+            placeholder="Paste PersistedSnapshot JSON here"
+            rows={10}
+            value={snapshotInput}
+          />
+          <p className="subtle">{snapshotStatus}</p>
+        </div>
       </aside>
 
       <main className="workspace">
@@ -1249,68 +1362,71 @@ export default function App() {
           <div className="toolbar">
             <div>
               <p className="eyebrow">Preview Workbench</p>
-              <h2>{previewState.fileName}</h2>
+              <h2>{snapshotMode ? 'persisted_snapshot.json' : previewState.fileName}</h2>
             </div>
             <div className="toolbar-meta">
               <button
                 className={focusMode ? 'action-button active' : 'action-button'}
                 onClick={handleToggleFocusMode}
                 type="button"
+                disabled={snapshotMode}
               >
                 {focusMode ? 'Exit Focus Mode' : 'Focus Mode'}
               </button>
-              <span>{previewState.ruleChecks.length} checks</span>
-              <span>{previewState.constraints.length} visible constraints</span>
+              <span>{snapshotMode ? `${snapshotModel?.stats.classCount ?? 0} classes` : `${previewState.ruleChecks.length} checks`}</span>
+              <span>{snapshotMode ? `${snapshotModel?.stats.functionRowCount ?? 0} rows` : `${previewState.constraints.length} visible constraints`}</span>
             </div>
           </div>
 
           <div className={focusMode ? 'preview-stack focus-mode' : 'preview-stack'}>
             <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
-              <h3>{previewState.title}</h3>
-              <p>{previewState.notice}</p>
+              <h3>{snapshotMode ? 'Persisted Snapshot Summary' : previewState.title}</h3>
+              <p>{snapshotMode ? snapshotStatus : previewState.notice}</p>
               <div className="metric-grid">
                 <div>
-                  <span className="metric-label">Nodes</span>
-                  <strong>{fixture.ir.nodes.length}</strong>
+                  <span className="metric-label">{snapshotMode ? 'Classes' : 'Nodes'}</span>
+                  <strong>{snapshotMode ? snapshotModel?.stats.classCount ?? 0 : fixture.ir.nodes.length}</strong>
                 </div>
                 <div>
-                  <span className="metric-label">Action effects</span>
-                  <strong>{fixture.ir.action_effects.length}</strong>
+                  <span className="metric-label">{snapshotMode ? 'Function rows' : 'Action effects'}</span>
+                  <strong>{snapshotMode ? snapshotModel?.stats.functionRowCount ?? 0 : fixture.ir.action_effects.length}</strong>
                 </div>
                 <div>
-                  <span className="metric-label">All constraints</span>
-                  <strong>{previewState.allConstraints.length}</strong>
+                  <span className="metric-label">{snapshotMode ? 'Facts' : 'All constraints'}</span>
+                  <strong>{snapshotMode ? snapshotModel?.stats.factCount ?? 0 : previewState.allConstraints.length}</strong>
                 </div>
                 <div>
-                  <span className="metric-label">Tracked targets</span>
-                  <strong>{previewState.sourceTargetIds.length}</strong>
+                  <span className="metric-label">{snapshotMode ? 'Diagnostics' : 'Tracked targets'}</span>
+                  <strong>{snapshotMode ? snapshotModel?.stats.diagnosticCount ?? 0 : previewState.sourceTargetIds.length}</strong>
                 </div>
               </div>
             </div>
 
             <div className={focusMode ? 'preview-card graph-card focus-card' : 'preview-card graph-card'}>
               <div className="panel-header">
-                <h3>Graph Snapshot</h3>
+                <h3>{snapshotMode ? 'Persisted EGraph' : 'Graph Snapshot'}</h3>
                 <div className="graph-toolbar">
-                  <div className="button-row">
-                    {dotViewModes.map((mode) => (
+                  {snapshotMode ? null : (
+                    <div className="button-row">
+                      {dotViewModes.map((mode) => (
+                        <button
+                          key={mode}
+                          className={dotViewMode === mode ? 'action-button active' : 'action-button'}
+                          onClick={() => setDotViewMode(mode)}
+                          type="button"
+                        >
+                          {modeLabel(mode)}
+                        </button>
+                      ))}
                       <button
-                        key={mode}
-                        className={dotViewMode === mode ? 'action-button active' : 'action-button'}
-                        onClick={() => setDotViewMode(mode)}
+                        className={detailExpanded ? 'action-button active' : 'action-button'}
+                        onClick={() => setDetailExpanded((value) => !value)}
                         type="button"
                       >
-                        {modeLabel(mode)}
+                        {detailExpanded ? 'Hide Node Detail' : 'Show Node Detail'}
                       </button>
-                    ))}
-                    <button
-                      className={detailExpanded ? 'action-button active' : 'action-button'}
-                      onClick={() => setDetailExpanded((value) => !value)}
-                      type="button"
-                    >
-                      {detailExpanded ? 'Hide Node Detail' : 'Show Node Detail'}
-                    </button>
-                  </div>
+                    </div>
+                  )}
                   <button className="action-button" onClick={handleRefresh} type="button">
                     Refresh
                   </button>
@@ -1323,9 +1439,9 @@ export default function App() {
                 onContextMenu={handleGraphContextMenu}
                 onDoubleClick={handleGraphDoubleClick}
                 ref={graphPreviewRef}
-                dangerouslySetInnerHTML={{ __html: graphSvg }}
+                dangerouslySetInnerHTML={{ __html: snapshotMode ? snapshotGraphSvg : graphSvg }}
               />
-              {graphContextMenu.open ? (
+              {!snapshotMode && graphContextMenu.open ? (
                 <div
                   className="graph-context-menu"
                   onClick={(event) => event.stopPropagation()}
@@ -1386,7 +1502,7 @@ export default function App() {
                   </button>
                 </div>
               ) : null}
-              {typstEditorTargetId ? (
+              {!snapshotMode && typstEditorTargetId ? (
                 <div className="typst-override-panel" onClick={(event) => event.stopPropagation()}>
                   <div className="panel-header">
                     <h3>Typst Override</h3>
@@ -1430,96 +1546,146 @@ export default function App() {
                   </div>
                 </div>
               ) : null}
-              <p className="subtle">{typstStatus}</p>
+              <p className="subtle">{snapshotMode ? 'Grouped by persisted equivalence classes with function rows, facts, and unions as graph operators.' : typstStatus}</p>
             </div>
 
+	            <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
+	              {snapshotMode ? (
+	                <>
+                  <div className="panel-header">
+                    <h3>Snapshot Diagnostics</h3>
+                  </div>
+                  <div className="list-stack">
+                    {snapshotModel?.snapshot.diagnostics.length ? snapshotModel.snapshot.diagnostics.map((diagnostic, index) => (
+                      <div className="list-card" key={`${diagnostic.code}-${index}`}>
+                        <strong>{diagnostic.code}</strong>
+                        <span>{diagnostic.message}</span>
+                        <small>{diagnostic.path ?? 'snapshot root'}</small>
+                      </div>
+                    )) : <p>No diagnostics in this snapshot.</p>}
+	                  </div>
+	                </>
+	              ) : (
+	                <>
+	                  <div className="panel-header">
+	                    <h3>Rule Checks</h3>
+	                    <button
+	                      className="action-button"
+	                      onClick={() => setInteractionState(toggleRuleCheckView(activeState))}
+	                      type="button"
+	                    >
+	                      {activeState.ruleCheckViewVisible ? 'Hide checks' : 'Show checks'}
+	                    </button>
+	                  </div>
+	                  {previewState.ruleChecks.length === 0 ? (
+	                    <p>No redundant action inserts in this fixture.</p>
+	                  ) : (
+	                    <div className="list-stack">
+	                      {previewState.ruleChecks.map((check) => (
+	                        <button
+	                          key={check.id}
+	                          className={check.id === activeState.activeRuleCheckId ? 'list-card active' : 'list-card'}
+	                          onClick={() => setInteractionState(selectRuleCheck(activeState, check.id))}
+	                          type="button"
+	                        >
+	                          <strong>{check.kind}</strong>
+	                          <span>{check.message}</span>
+	                          <small>{check.suggestion}</small>
+	                        </button>
+	                      ))}
+	                    </div>
+	                  )}
+	                </>
+	              )}
+	            </div>
+
             <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
-              <div className="panel-header">
-                <h3>Rule Checks</h3>
-                <button
-                  className="action-button"
-                  onClick={() => setInteractionState(toggleRuleCheckView(activeState))}
-                  type="button"
-                >
-                  {activeState.ruleCheckViewVisible ? 'Hide checks' : 'Show checks'}
-                </button>
-              </div>
-              {previewState.ruleChecks.length === 0 ? (
-                <p>No redundant action inserts in this fixture.</p>
+              {snapshotMode ? (
+                <>
+                  <h3>Equivalence Classes</h3>
+                  <div className="list-stack">
+                    {snapshotModel?.classNodes.map((classNode) => (
+                      <div className="list-card" key={classNode.id}>
+                        <strong>{classNode.sortName}</strong>
+                        <span>{classNode.memberCount} member(s)</span>
+                        <small>{classNode.memberLabels.slice(0, 3).join(' | ')}</small>
+                      </div>
+                    )) ?? <p>No class nodes.</p>}
+                  </div>
+                </>
               ) : (
-                <div className="list-stack">
-                  {previewState.ruleChecks.map((check) => (
-                    <button
-                      key={check.id}
-                      className={check.id === activeState.activeRuleCheckId ? 'list-card active' : 'list-card'}
-                      onClick={() => setInteractionState(selectRuleCheck(activeState, check.id))}
-                      type="button"
-                    >
-                      <strong>{check.kind}</strong>
-                      <span>{check.message}</span>
-                      <small>{check.suggestion}</small>
-                    </button>
-                  ))}
-                </div>
+                <>
+                  <div className="panel-header">
+                    <h3>Constraint View</h3>
+                    <div className="button-row">
+                      <button
+                        className={
+                          activeState.constraintFilterMode === 'all' ? 'action-button active' : 'action-button'
+                        }
+                        onClick={() => setInteractionState(setConstraintFilterMode(activeState, 'all'))}
+                        type="button"
+                      >
+                        All
+                      </button>
+                      <button
+                        className={
+                          activeState.constraintFilterMode === 'node-specific'
+                            ? 'action-button active'
+                            : 'action-button'
+                        }
+                        onClick={() => setInteractionState(setConstraintFilterMode(activeState, 'node-specific'))}
+                        type="button"
+                      >
+                        Node-specific
+                      </button>
+                    </div>
+                  </div>
+                  <p className="subtle">
+                    {activeState.constraintFilterMode === 'node-specific' && activeState.constraintFilterNodeId
+                      ? `Scoped to node ${activeState.constraintFilterNodeId}.`
+                      : 'Pick a node card to drill down or keep the full shared constraint list visible.'}
+                  </p>
+                  <div className="list-stack">
+                    {projection.visibleConstraints.length === 0 ? (
+                      <p className="empty-state">No constraints visible in the current filter mode.</p>
+                    ) : (
+                      projection.visibleConstraints.map((constraint) => (
+                        <button
+                          key={constraint.id}
+                          className={
+                            constraint.id === activeState.activeConstraintId ? 'list-card active' : 'list-card'
+                          }
+                          onClick={() => setInteractionState(selectConstraint(activeState, constraint.id))}
+                          type="button"
+                        >
+                          <strong>{constraint.id}</strong>
+                          <span>{constraint.compactText}</span>
+                          <small>{describeConstraintScope(constraint, activeState)}</small>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
             <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
-              <div className="panel-header">
-                <h3>Constraint View</h3>
-                <div className="button-row">
-                  <button
-                    className={
-                      activeState.constraintFilterMode === 'all' ? 'action-button active' : 'action-button'
-                    }
-                    onClick={() => setInteractionState(setConstraintFilterMode(activeState, 'all'))}
-                    type="button"
-                  >
-                    All
-                  </button>
-                  <button
-                    className={
-                      activeState.constraintFilterMode === 'node-specific'
-                        ? 'action-button active'
-                        : 'action-button'
-                    }
-                    onClick={() => setInteractionState(setConstraintFilterMode(activeState, 'node-specific'))}
-                    type="button"
-                  >
-                    Node-specific
-                  </button>
-                </div>
-              </div>
-              <p className="subtle">
-                {activeState.constraintFilterMode === 'node-specific' && activeState.constraintFilterNodeId
-                  ? `Scoped to node ${activeState.constraintFilterNodeId}.`
-                  : 'Pick a node card to drill down or keep the full shared constraint list visible.'}
-              </p>
-              <div className="list-stack">
-                {projection.visibleConstraints.length === 0 ? (
-                  <p className="empty-state">No constraints visible in the current filter mode.</p>
-                ) : (
-                  projection.visibleConstraints.map((constraint) => (
-                    <button
-                      key={constraint.id}
-                      className={
-                        constraint.id === activeState.activeConstraintId ? 'list-card active' : 'list-card'
-                      }
-                      onClick={() => setInteractionState(selectConstraint(activeState, constraint.id))}
-                      type="button"
-                    >
-                      <strong>{constraint.id}</strong>
-                      <span>{constraint.compactText}</span>
-                      <small>{describeConstraintScope(constraint, activeState)}</small>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
-              <h3>Targets</h3>
-              <div className="target-grid">
+              {snapshotMode ? (
+                <>
+                  <h3>Rows And Facts</h3>
+                  <div className="list-stack">
+                    {snapshotModel?.opNodes.map((node) => (
+                      <div className="list-card" key={node.id}>
+                        <strong>{node.label}</strong>
+                        <span>{node.detail}</span>
+                      </div>
+                    )) ?? <p>No rows.</p>}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3>Targets</h3>
+                  <div className="target-grid">
                 {fixture.ir.nodes.map((node) => {
                   const isHighlighted = previewState.highlightedPatternNodeIds.includes(node.id);
                   const isConstraintActive = previewState.activeConstraintNodeIds.includes(node.id);
@@ -1590,18 +1756,33 @@ export default function App() {
                     </div>
                   );
                 })}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
-              <h3>Rust Shape</h3>
-              <div className="token-list">
-                {stats.keywordHits.map((entry) => (
-                  <span className="token-chip" key={entry.keyword}>
-                    {entry.keyword} x {entry.count}
-                  </span>
-                ))}
-              </div>
+              {snapshotMode ? (
+                <>
+                  <h3>Restore Mapping</h3>
+                  <div className="token-list">
+                    {snapshotModel?.snapshot.restore_mapping.notes.map((note) => (
+                      <span className="token-chip" key={note}>{note}</span>
+                    )) ?? null}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h3>Rust Shape</h3>
+                  <div className="token-list">
+                    {stats.keywordHits.map((entry) => (
+                      <span className="token-chip" key={entry.keyword}>
+                        {entry.keyword} x {entry.count}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </section>
