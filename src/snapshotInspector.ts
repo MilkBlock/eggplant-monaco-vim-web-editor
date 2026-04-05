@@ -63,6 +63,23 @@ export type PersistedSnapshotValueId = {
   debug_value?: string | null;
 };
 
+export type PersistedSnapshotEqClassMemberRow = {
+  op_id: number;
+  inputs: PersistedSnapshotValue[];
+};
+
+export type PersistedSnapshotEqClass = {
+  sort_id: number;
+  logical_id: string;
+  debug_value?: string | null;
+  members: PersistedSnapshotEqClassMemberRow[];
+};
+
+export type PersistedSnapshotEqClassPayload = {
+  semantics: 'inspect_only';
+  classes: PersistedSnapshotEqClass[];
+};
+
 export type PersistedSnapshot = {
   snapshot_version: number;
   format: string;
@@ -94,6 +111,7 @@ export type PersistedSnapshot = {
     value_ids: PersistedSnapshotValueId[];
     notes: string[];
   };
+  eq_class_payload?: PersistedSnapshotEqClassPayload | null;
   diagnostics: Array<{
     code: string;
     message: string;
@@ -116,11 +134,14 @@ type SnapshotOpNode = {
 
 export type SnapshotInspectorModel = {
   snapshot: PersistedSnapshot;
-  dot: string;
+  rowsDot: string;
+  eqClassDot: string | null;
   classNodes: SnapshotClassNode[];
   opNodes: SnapshotOpNode[];
+  eqClasses: PersistedSnapshotEqClass[];
   stats: {
     classCount: number;
+    eqClassCount: number;
     valueIdCount: number;
     factCount: number;
     functionRowCount: number;
@@ -319,13 +340,53 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
 
   lines.push('}');
 
+  const eqClassPayload = snapshot.eq_class_payload ?? null;
+  const eqClassLines = eqClassPayload
+    ? [
+        'digraph PersistedSnapshotEqClass {',
+        '  rankdir=LR;',
+        '  graph [pad=0.3, nodesep=0.45, ranksep=0.7];',
+        '  node [shape=box, style="rounded,filled", fillcolor="#f6f2e8", color="#6b5b3e", fontname="Helvetica"];',
+        '  edge [color="#7a7468"];',
+      ]
+    : null;
+
+  if (eqClassPayload && eqClassLines) {
+    eqClassPayload.classes.forEach((eqClass, index) => {
+      const classId = `eqclass:${index}`;
+      const classLabel = eqClass.debug_value ?? `${sortNames.get(eqClass.sort_id) ?? 'sort'}:${eqClass.logical_id}`;
+      eqClassLines.push(
+        `  ${quote(classId)} [label=${quote(`${sortNames.get(eqClass.sort_id) ?? 'sort'}\\n${classLabel}\\n${eqClass.members.length} member row(s)`)}, shape=ellipse, fillcolor="#fff7df", color="#c26d00"];`,
+      );
+
+      eqClass.members.forEach((member, memberIndex) => {
+        const memberId = `${classId}:member:${memberIndex}`;
+        const label = opName(member.op_id, opsById);
+        eqClassLines.push(
+          `  ${quote(memberId)} [label=${quote(`${label}\\nmember row`)}, fillcolor="#e9f2ff", color="#4a6fa5"];`,
+        );
+        eqClassLines.push(`  ${quote(classId)} -> ${quote(memberId)} [label="contains"];`);
+        member.inputs.forEach((input, inputIndex) => {
+          const sourceClass = eqClassPayload.classes.findIndex((candidate) => candidate.logical_id === (input.kind === 'ref' ? input.logical_id : ''));
+          if (sourceClass >= 0) {
+            eqClassLines.push(`  ${quote(`eqclass:${sourceClass}`)} -> ${quote(memberId)} [label=${quote(String(inputIndex))}];`);
+          }
+        });
+      });
+    });
+    eqClassLines.push('}');
+  }
+
   return {
     snapshot,
-    dot: lines.join('\n'),
+    rowsDot: lines.join('\n'),
+    eqClassDot: eqClassLines ? eqClassLines.join('\n') : null,
     classNodes,
     opNodes,
+    eqClasses: eqClassPayload?.classes ?? [],
     stats: {
       classCount: classNodes.length,
+      eqClassCount: eqClassPayload?.classes.length ?? 0,
       valueIdCount: snapshot.restore_mapping.value_ids.length,
       factCount: snapshot.state.facts.length,
       functionRowCount: snapshot.state.function_rows.length,

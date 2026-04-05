@@ -483,6 +483,7 @@ export default function App() {
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
+  const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass'>('rows');
   const [selectedSnapshotDemoId, setSelectedSnapshotDemoId] = useState(snapshotDemos[0]?.id ?? '');
   const [snapshotInput, setSnapshotInput] = useState('');
   const [snapshotStatus, setSnapshotStatus] = useState('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
@@ -650,7 +651,10 @@ export default function App() {
     setGraphLayoutStatus('Snapshot graph: running Graphviz dot...');
     void (async () => {
       try {
-        const svg = await renderDotToSvg(snapshotModel.dot);
+        const dot = snapshotGraphMode === 'eqclass' && snapshotModel.eqClassDot
+          ? snapshotModel.eqClassDot
+          : snapshotModel.rowsDot;
+        const svg = await renderDotToSvg(dot);
         if (cancelled) {
           return;
         }
@@ -671,7 +675,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [snapshotMode, snapshotModel]);
+  }, [snapshotGraphMode, snapshotMode, snapshotModel]);
 
   useEffect(() => {
     if (!snapshotMode || !selectedSnapshotDemo) {
@@ -691,8 +695,9 @@ export default function App() {
       const parsed = JSON.parse(nextInput);
       const model = buildSnapshotInspectorModel(parsed);
       setSnapshotModel(model);
+      setSnapshotGraphMode(model.eqClassDot ? 'eqclass' : 'rows');
       setSnapshotStatus(
-        `Loaded snapshot with ${model.stats.classCount} equivalence class node(s), ${model.stats.functionRowCount} function row(s), and ${model.stats.factCount} fact row(s).`,
+        `Loaded snapshot with ${model.stats.classCount} row-graph classes, ${model.stats.eqClassCount} eq-class payload group(s), ${model.stats.functionRowCount} function row(s), and ${model.stats.factCount} fact row(s).`,
       );
     } catch (error) {
       setSnapshotModel(null);
@@ -1448,7 +1453,7 @@ export default function App() {
               >
                 {focusMode ? 'Exit Focus Mode' : 'Focus Mode'}
               </button>
-              <span>{snapshotMode ? `${snapshotModel?.stats.classCount ?? 0} classes` : `${previewState.ruleChecks.length} checks`}</span>
+              <span>{snapshotMode ? `${snapshotModel?.stats.eqClassCount || snapshotModel?.stats.classCount || 0} classes` : `${previewState.ruleChecks.length} checks`}</span>
               <span>{snapshotMode ? `${snapshotModel?.stats.functionRowCount ?? 0} rows` : `${previewState.constraints.length} visible constraints`}</span>
             </div>
           </div>
@@ -1481,7 +1486,25 @@ export default function App() {
               <div className="panel-header">
                 <h3>{snapshotMode ? 'Persisted EGraph' : 'Graph Snapshot'}</h3>
                 <div className="graph-toolbar">
-                  {snapshotMode ? null : (
+                  {snapshotMode ? (
+                    <div className="button-row">
+                      <button
+                        className={snapshotGraphMode === 'rows' ? 'action-button active' : 'action-button'}
+                        onClick={() => setSnapshotGraphMode('rows')}
+                        type="button"
+                      >
+                        Rows Graph
+                      </button>
+                      <button
+                        className={snapshotGraphMode === 'eqclass' ? 'action-button active' : 'action-button'}
+                        disabled={!snapshotModel?.eqClassDot}
+                        onClick={() => setSnapshotGraphMode('eqclass')}
+                        type="button"
+                      >
+                        EqClass Graph
+                      </button>
+                    </div>
+                  ) : (
                     <div className="button-row">
                       {dotViewModes.map((mode) => (
                         <button
@@ -1621,7 +1644,13 @@ export default function App() {
                   </div>
                 </div>
               ) : null}
-              <p className="subtle">{snapshotMode ? 'Grouped by persisted equivalence classes with function rows, facts, and unions as graph operators.' : typstStatus}</p>
+              <p className="subtle">
+                {snapshotMode
+                  ? snapshotGraphMode === 'eqclass'
+                    ? 'EqClass Graph uses persisted eq_class_payload classes and their member rows.'
+                    : 'Rows Graph groups persisted values into row-oriented classes using restore_mapping plus unions.'
+                  : typstStatus}
+              </p>
             </div>
 
 	            <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
@@ -1677,15 +1706,23 @@ export default function App() {
             <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
               {snapshotMode ? (
                 <>
-                  <h3>Equivalence Classes</h3>
+                  <h3>{snapshotGraphMode === 'eqclass' ? 'EqClass Payload' : 'Equivalence Classes'}</h3>
                   <div className="list-stack">
-                    {snapshotModel?.classNodes.map((classNode) => (
-                      <div className="list-card" key={classNode.id}>
-                        <strong>{classNode.sortName}</strong>
-                        <span>{classNode.memberCount} member(s)</span>
-                        <small>{classNode.memberLabels.slice(0, 3).join(' | ')}</small>
-                      </div>
-                    )) ?? <p>No class nodes.</p>}
+                    {snapshotGraphMode === 'eqclass'
+                      ? (snapshotModel?.eqClasses.map((eqClass) => (
+                          <div className="list-card" key={eqClass.logical_id}>
+                            <strong>{eqClass.debug_value ?? eqClass.logical_id}</strong>
+                            <span>{eqClass.members.length} member row(s)</span>
+                            <small>{eqClass.logical_id}</small>
+                          </div>
+                        )) ?? <p>No eq-class payload in this snapshot.</p>)
+                      : (snapshotModel?.classNodes.map((classNode) => (
+                          <div className="list-card" key={classNode.id}>
+                            <strong>{classNode.sortName}</strong>
+                            <span>{classNode.memberCount} member(s)</span>
+                            <small>{classNode.memberLabels.slice(0, 3).join(' | ')}</small>
+                          </div>
+                        )) ?? <p>No class nodes.</p>)}
                   </div>
                 </>
               ) : (
