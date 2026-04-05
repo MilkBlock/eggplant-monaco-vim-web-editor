@@ -1025,17 +1025,6 @@ export default function App() {
     );
   };
 
-  const handleToggleSnapshotMode = () => {
-    setSnapshotMode((value) => !value);
-    setFocusMode(false);
-    setGraphContextMenu(closedGraphContextMenu);
-    setClipboardStatus(
-      snapshotMode
-        ? 'Exited Snapshot Inspector.'
-        : 'Entered Snapshot Inspector. Graph now shows persisted egraph classes and rows.',
-    );
-  };
-
   const handleGraphZoomDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     const targetId = findGraphNodeTargetId(event.target);
@@ -1237,82 +1226,103 @@ export default function App() {
       <aside className="sidebar">
         <div className="panel">
           <div className="panel-header">
-            <h2>Demo</h2>
+            <h2>Mode</h2>
           </div>
-          <label className="sample-select-wrap">
-            <select
-              className="sample-select"
-              onChange={(event) => handleSelectSample(event.target.value)}
-              value={selectedId}
-            >
-              {sampleFiles.map((file) => (
-                <option key={file.id} value={file.id}>
-                  {file.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="panel egg-editor-panel">
-          <div className="panel-header">
-            <div>
-              <h2>.egg Editor</h2>
-              <p className="subtle egg-editor-subtitle">
-                Editing here auto-generates Rust into the main editor.
-              </p>
-            </div>
-          </div>
-          <div className="egg-editor-frame">
-            <Editor
-              defaultLanguage="plaintext"
-              language="plaintext"
-              onChange={(value) => setTranspilerInput(value ?? '')}
-              onMount={handleEggEditorMount}
-              theme="vs-dark"
-              value={transpilerInput}
-              options={{
-                automaticLayout: true,
-                fontFamily: 'JetBrains Mono, Menlo, Monaco, monospace',
-                fontLigatures: true,
-                fontSize: 13,
-                minimap: { enabled: false },
-                padding: { top: 16, bottom: 16 },
-                scrollBeyondLastLine: false,
-                smoothScrolling: true,
-                wordWrap: 'on',
-              }}
-            />
-          </div>
-          <p className="subtle">{transpilerStatus}</p>
-          {transpilerBusy ? <p className="subtle">Generating Rust...</p> : null}
-          <p className="subtle">{ruleSyncStatus}</p>
-          {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
-        </div>
-
-        <div className="panel">
-          <div className="panel-header">
-            <h2>Persisted Snapshot</h2>
+          <div className="button-row">
             <button
-              className={snapshotMode ? 'action-button active' : 'action-button'}
-              onClick={handleToggleSnapshotMode}
+              className={!snapshotMode ? 'action-button active' : 'action-button'}
+              onClick={() => setSnapshotMode(false)}
               type="button"
             >
-              {snapshotMode ? 'Exit Snapshot' : 'Snapshot Inspector'}
+              Code
+            </button>
+            <button
+              className={snapshotMode ? 'action-button active' : 'action-button'}
+              onClick={() => setSnapshotMode(true)}
+              type="button"
+            >
+              Snapshot
             </button>
           </div>
-          <textarea
-            className="typst-override-input"
-            onChange={(event) => setSnapshotInput(event.target.value)}
-            placeholder="Paste PersistedSnapshot JSON here"
-            rows={10}
-            value={snapshotInput}
-          />
-          <p className="subtle">{snapshotStatus}</p>
         </div>
+
+        {snapshotMode ? (
+          <div className="panel egg-editor-panel">
+            <div className="panel-header">
+              <h2>Persisted Snapshot</h2>
+            </div>
+            <textarea
+              className="typst-override-input snapshot-input"
+              onChange={(event) => setSnapshotInput(event.target.value)}
+              placeholder="Paste PersistedSnapshot JSON here"
+              rows={18}
+              value={snapshotInput}
+            />
+            <p className="subtle">{snapshotStatus}</p>
+            {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
+          </div>
+        ) : (
+          <>
+            <div className="panel">
+              <div className="panel-header">
+                <h2>Demo</h2>
+              </div>
+              <label className="sample-select-wrap">
+                <select
+                  className="sample-select"
+                  onChange={(event) => handleSelectSample(event.target.value)}
+                  value={selectedId}
+                >
+                  {sampleFiles.map((file) => (
+                    <option key={file.id} value={file.id}>
+                      {file.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="panel egg-editor-panel">
+              <div className="panel-header">
+                <div>
+                  <h2>.egg Editor</h2>
+                  <p className="subtle egg-editor-subtitle">
+                    Editing here auto-generates Rust into the main editor.
+                  </p>
+                </div>
+              </div>
+              <div className="egg-editor-frame">
+                <Editor
+                  defaultLanguage="plaintext"
+                  language="plaintext"
+                  onChange={(value) => setTranspilerInput(value ?? '')}
+                  onMount={handleEggEditorMount}
+                  theme="vs-dark"
+                  value={transpilerInput}
+                  options={{
+                    automaticLayout: true,
+                    fontFamily: 'JetBrains Mono, Menlo, Monaco, monospace',
+                    fontLigatures: true,
+                    fontSize: 13,
+                    minimap: { enabled: false },
+                    padding: { top: 16, bottom: 16 },
+                    scrollBeyondLastLine: false,
+                    smoothScrolling: true,
+                    wordWrap: 'on',
+                  }}
+                />
+              </div>
+              <p className="subtle">{transpilerStatus}</p>
+              {transpilerBusy ? <p className="subtle">Generating Rust...</p> : null}
+              <p className="subtle">{ruleSyncStatus}</p>
+              {clipboardStatus ? <p className="subtle">{clipboardStatus}</p> : null}
+            </div>
+          </>
+        )}
       </aside>
 
-      <main className="workspace">
+      <main className={snapshotMode ? 'workspace snapshot-workspace' : 'workspace'}>
+        {!snapshotMode ? (
         <section className="editor-panel">
           <div className="toolbar">
             <div>
@@ -1357,11 +1367,12 @@ export default function App() {
           </div>
           <div className="vim-status" ref={statusRef} />
         </section>
+        ) : null}
 
         <section className={focusMode ? 'preview-panel focus-mode' : 'preview-panel'}>
           <div className="toolbar">
             <div>
-              <p className="eyebrow">Preview Workbench</p>
+              <p className="eyebrow">{snapshotMode ? 'Snapshot Viewer' : 'Preview Workbench'}</p>
               <h2>{snapshotMode ? 'persisted_snapshot.json' : previewState.fileName}</h2>
             </div>
             <div className="toolbar-meta">
