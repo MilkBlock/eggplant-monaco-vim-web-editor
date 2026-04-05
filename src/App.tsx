@@ -39,6 +39,7 @@ import complexSource from './samples/complex.rs?raw';
 import fibExampleSnapshotSource from './snapshot-demos/fib_example.json?raw';
 import relationExampleSnapshotSource from './snapshot-demos/relation_example.json?raw';
 import gblDataExampleSnapshotSource from './snapshot-demos/gbl_data_example.json?raw';
+import constantPropExampleSnapshotSource from './snapshot-demos/constant_prop_example.json?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
@@ -118,6 +119,12 @@ const snapshotDemos: SnapshotDemo[] = [
     label: 'gbl_data_example.json',
     description: 'Snapshot derived from the gbl_data example family: arithmetic constructor graph.',
     source: gblDataExampleSnapshotSource,
+  },
+  {
+    id: 'constant_prop_example',
+    label: 'constant_prop_example.json',
+    description: 'Snapshot derived from the constant_prop example: arithmetic rewrite rows over constants.',
+    source: constantPropExampleSnapshotSource,
   },
 ];
 
