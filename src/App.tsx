@@ -36,9 +36,9 @@ import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
 import mathMicrobenchmarkSource from './samples/math_microbenchmark.rs?raw';
 import complexSource from './samples/complex.rs?raw';
-import exprRewriteSnapshotSource from './snapshot-demos/expr_rewrite.json?raw';
-import fibFunctionTableSnapshotSource from './snapshot-demos/fib_function_table.json?raw';
-import relationPathSnapshotSource from './snapshot-demos/relation_path.json?raw';
+import fibExampleSnapshotSource from './snapshot-demos/fib_example.json?raw';
+import relationExampleSnapshotSource from './snapshot-demos/relation_example.json?raw';
+import gblDataExampleSnapshotSource from './snapshot-demos/gbl_data_example.json?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
@@ -102,22 +102,22 @@ const sampleFiles: SampleFile[] = [
 
 const snapshotDemos: SnapshotDemo[] = [
   {
-    id: 'fib_function_table',
-    label: 'fib_function_table.json',
-    description: 'Function-table growth and rule-driven rows, based on the fib example shape.',
-    source: fibFunctionTableSnapshotSource,
+    id: 'fib_example',
+    label: 'fib_example.json',
+    description: 'Snapshot derived from the fib example: function-table rows plus rule-driven growth.',
+    source: fibExampleSnapshotSource,
   },
   {
-    id: 'relation_path',
-    label: 'relation_path.json',
-    description: 'Relation/path expansion snapshot, matching the relation example family.',
-    source: relationPathSnapshotSource,
+    id: 'relation_example',
+    label: 'relation_example.json',
+    description: 'Snapshot derived from the relation example: edge/path expansion with mark rows.',
+    source: relationExampleSnapshotSource,
   },
   {
-    id: 'expr_rewrite',
-    label: 'expr_rewrite.json',
-    description: 'Constructor plus rewrite-style expression snapshot with equivalence-oriented structure.',
-    source: exprRewriteSnapshotSource,
+    id: 'gbl_data_example',
+    label: 'gbl_data_example.json',
+    description: 'Snapshot derived from the gbl_data example family: arithmetic constructor graph.',
+    source: gblDataExampleSnapshotSource,
   },
 ];
 

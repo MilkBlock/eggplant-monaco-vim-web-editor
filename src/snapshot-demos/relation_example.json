@@ -1,0 +1,439 @@
+{
+  "snapshot_version": 1,
+  "format": "eggplant.persisted-snapshot",
+  "profile": "eggplant-common-path-v1",
+  "producer": {
+    "crate": "eggplant",
+    "version": "0.2.7"
+  },
+  "source_schema": {
+    "engine_fingerprint": "bd6de606a786630708cf1eac5e3480cf9449db1cc88e134c59b2a93fe903ffcf",
+    "dsl_runtime_fingerprint": "5c5f67c46cbb5de2890f700f9030acee9ea2bae70560d8d5785d6eebdc4a7bfd",
+    "dsl_metadata_fingerprint": "93ecdb1fd621f319d40096a1d5550c30a7b579a4d9e647b100d04741cf69d0cc",
+    "macro_rev": "eggplant-dsl-schema-v1"
+  },
+  "dictionary": {
+    "strings": [],
+    "symbols": [],
+    "sorts": [
+      "@edgeSort",
+      "@pathSort",
+      "BigInt",
+      "BigRat",
+      "String",
+      "Unit",
+      "bool",
+      "f64",
+      "i64"
+    ],
+    "ops": [
+      "edge",
+      "path",
+      "path_mark"
+    ],
+    "rulesets": []
+  },
+  "schema": {
+    "sort_decls": [
+      {
+        "sort_id": 0,
+        "name": "@edgeSort",
+        "kind": "eqsort",
+        "metadata": null
+      },
+      {
+        "sort_id": 1,
+        "name": "@pathSort",
+        "kind": "eqsort",
+        "metadata": null
+      },
+      {
+        "sort_id": 2,
+        "name": "BigInt",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 3,
+        "name": "BigRat",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 4,
+        "name": "String",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 5,
+        "name": "Unit",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 6,
+        "name": "bool",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 7,
+        "name": "f64",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 8,
+        "name": "i64",
+        "kind": "primitive",
+        "metadata": null
+      }
+    ],
+    "function_decls": [
+      {
+        "op_id": 2,
+        "name": "path_mark",
+        "input_sort_ids": [
+          8,
+          8
+        ],
+        "output_sort_id": 5,
+        "is_relation": false,
+        "merge": null,
+        "cost": null
+      }
+    ],
+    "constructor_decls": [
+      {
+        "op_id": 0,
+        "name": "edge",
+        "input_sort_ids": [
+          8,
+          8
+        ],
+        "output_sort_id": 0,
+        "is_relation": false,
+        "merge": null,
+        "cost": null
+      },
+      {
+        "op_id": 1,
+        "name": "path",
+        "input_sort_ids": [
+          8,
+          8
+        ],
+        "output_sort_id": 1,
+        "is_relation": false,
+        "merge": null,
+        "cost": null
+      }
+    ],
+    "ruleset_decls": []
+  },
+  "state": {
+    "facts": [],
+    "function_rows": [
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "1",
+              "machine_value": 1
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 0,
+          "logical_id": "v0"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "3",
+              "machine_value": 3
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 0,
+          "logical_id": "v1"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "1",
+              "machine_value": 1
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 1,
+          "logical_id": "v2"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "3",
+              "machine_value": 3
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 1,
+          "logical_id": "v3"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "1",
+              "machine_value": 1
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "3",
+              "machine_value": 3
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 1,
+          "logical_id": "v4"
+        }
+      },
+      {
+        "op_id": 2,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "1",
+              "machine_value": 1
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          }
+        ],
+        "output": {
+          "kind": "lit",
+          "sort_id": 5,
+          "value": {
+            "tag": "Unit",
+            "value": "()",
+            "machine_value": null
+          }
+        }
+      },
+      {
+        "op_id": 2,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "3",
+              "machine_value": 3
+            }
+          }
+        ],
+        "output": {
+          "kind": "lit",
+          "sort_id": 5,
+          "value": {
+            "tag": "Unit",
+            "value": "()",
+            "machine_value": null
+          }
+        }
+      },
+      {
+        "op_id": 2,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "1",
+              "machine_value": 1
+            }
+          },
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "3",
+              "machine_value": 3
+            }
+          }
+        ],
+        "output": {
+          "kind": "lit",
+          "sort_id": 5,
+          "value": {
+            "tag": "Unit",
+            "value": "()",
+            "machine_value": null
+          }
+        }
+      }
+    ],
+    "unions": [],
+    "runs": [],
+    "fresh_id_cursor": null
+  },
+  "restore_mapping": {
+    "value_ids": [
+      {
+        "logical_id": "v0",
+        "sort_id": 0,
+        "debug_value": "(edge 1 2)"
+      },
+      {
+        "logical_id": "v1",
+        "sort_id": 0,
+        "debug_value": "(edge 2 3)"
+      },
+      {
+        "logical_id": "v2",
+        "sort_id": 1,
+        "debug_value": "(path 1 2)"
+      },
+      {
+        "logical_id": "v3",
+        "sort_id": 1,
+        "debug_value": "(path 2 3)"
+      },
+      {
+        "logical_id": "v4",
+        "sort_id": 1,
+        "debug_value": "(path 1 3)"
+      }
+    ],
+    "notes": [
+      "logical_id values are snapshot-local and must be remapped during import",
+      "runtime ids, hashes, and class ids are intentionally excluded from persisted semantic state"
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "unsupported-feature",
+      "message": "v1 exporter does not yet persist union history; state.unions is empty",
+      "path": "state.unions"
+    },
+    {
+      "code": "unsupported-feature",
+      "message": "v1 exporter does not yet persist run scheduling history; state.runs is empty",
+      "path": "state.runs"
+    },
+    {
+      "code": "unsupported-feature",
+      "message": "persisted ruleset declarations are provenance-only metadata in v1; restore ignores them and they do not imply rule body/run replay semantics",
+      "path": "schema.ruleset_decls"
+    },
+    {
+      "code": "plain-source-non-goal",
+      "message": "v1 does not treat plain/non-eggplant relation-like source `edge` as supported fact-classification; 2 row(s) remain outside the `state.facts` contract and are exported without relation-fact guarantees",
+      "path": "state.plain_source_relation_like.edge"
+    },
+    {
+      "code": "plain-source-non-goal",
+      "message": "v1 does not treat plain/non-eggplant relation-like source `path` as supported fact-classification; 3 row(s) remain outside the `state.facts` contract and are exported without relation-fact guarantees",
+      "path": "state.plain_source_relation_like.path"
+    }
+  ]
+}
