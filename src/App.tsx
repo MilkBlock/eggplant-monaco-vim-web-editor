@@ -927,7 +927,10 @@ export default function App() {
     if (targetId) {
       revealTargetSource(targetId);
       setGraphContextMenu(closedGraphContextMenu);
+      return;
     }
+    setGraphContextMenu(closedGraphContextMenu);
+    setGraphZoomOpen(true);
   };
 
   const handleToggleFocusMode = () => {
