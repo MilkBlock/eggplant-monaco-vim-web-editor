@@ -927,16 +927,7 @@ export default function App() {
     if (targetId) {
       revealTargetSource(targetId);
       setGraphContextMenu(closedGraphContextMenu);
-      return;
     }
-    const nextFocusMode = !focusMode;
-    setFocusMode(nextFocusMode);
-    setGraphContextMenu(closedGraphContextMenu);
-    setClipboardStatus(
-      nextFocusMode
-        ? 'Entered Focus Mode. Graph pane now owns the inspector area.'
-        : 'Exited Focus Mode.',
-    );
   };
 
   const handleToggleFocusMode = () => {
