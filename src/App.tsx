@@ -36,9 +36,9 @@ import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
 import mathMicrobenchmarkSource from './samples/math_microbenchmark.rs?raw';
 import complexSource from './samples/complex.rs?raw';
-import constructorRowsSnapshotSource from './snapshot-demos/constructor_rows.json?raw';
-import unitFunctionRowsSnapshotSource from './snapshot-demos/unit_function_rows.json?raw';
-import plainRelationDiagnosticSnapshotSource from './snapshot-demos/plain_relation_diagnostic.json?raw';
+import exprRewriteSnapshotSource from './snapshot-demos/expr_rewrite.json?raw';
+import fibFunctionTableSnapshotSource from './snapshot-demos/fib_function_table.json?raw';
+import relationPathSnapshotSource from './snapshot-demos/relation_path.json?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
@@ -102,22 +102,22 @@ const sampleFiles: SampleFile[] = [
 
 const snapshotDemos: SnapshotDemo[] = [
   {
-    id: 'constructor_rows',
-    label: 'constructor_rows.json',
-    description: 'Constructor/function-row heavy snapshot from a real egraph run.',
-    source: constructorRowsSnapshotSource,
+    id: 'fib_function_table',
+    label: 'fib_function_table.json',
+    description: 'Function-table growth and rule-driven rows, based on the fib example shape.',
+    source: fibFunctionTableSnapshotSource,
   },
   {
-    id: 'unit_function_rows',
-    label: 'unit_function_rows.json',
-    description: 'No-merge Unit function rows from a real egraph run.',
-    source: unitFunctionRowsSnapshotSource,
+    id: 'relation_path',
+    label: 'relation_path.json',
+    description: 'Relation/path expansion snapshot, matching the relation example family.',
+    source: relationPathSnapshotSource,
   },
   {
-    id: 'plain_relation_diagnostic',
-    label: 'plain_relation_diagnostic.json',
-    description: 'Plain relation snapshot showing restore coverage diagnostics.',
-    source: plainRelationDiagnosticSnapshotSource,
+    id: 'expr_rewrite',
+    label: 'expr_rewrite.json',
+    description: 'Constructor plus rewrite-style expression snapshot with equivalence-oriented structure.',
+    source: exprRewriteSnapshotSource,
   },
 ];
 
