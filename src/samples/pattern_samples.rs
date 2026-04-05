@@ -54,7 +54,7 @@ fn add_rule_display_demo() {
     );
 }
 
-fn step_pat<PR: PatRecSgl>() -> StepPat<PR> {
+fn step_pat() -> StepPat {
     let lhs = Const::query();
     let rhs = Const::query();
     let q = Mul::query(&lhs, &rhs);

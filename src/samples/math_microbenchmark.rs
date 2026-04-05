@@ -51,13 +51,13 @@ enum Math {
 tx_rx_vt_pr!(MyTxMath, MyPatRecMath);
 
 #[eggplant::pat_vars]
-struct AddCommPat<PR: PatRecSgl> {
+struct AddCommPat {
     a: Math,
     b: Math,
     add: MAdd,
 }
 
-fn add_comm_pat<PR: PatRecSgl>() -> AddCommPat<PR> {
+fn add_comm_pat() -> AddCommPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let add = MAdd::query(&a, &b);
@@ -65,13 +65,13 @@ fn add_comm_pat<PR: PatRecSgl>() -> AddCommPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct MulCommPat<PR: PatRecSgl> {
+struct MulCommPat {
     a: Math,
     b: Math,
     mul: MMul,
 }
 
-fn mul_comm_pat<PR: PatRecSgl>() -> MulCommPat<PR> {
+fn mul_comm_pat() -> MulCommPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let mul = MMul::query(&a, &b);
@@ -79,14 +79,14 @@ fn mul_comm_pat<PR: PatRecSgl>() -> MulCommPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct AddAssocPat<PR: PatRecSgl> {
+struct AddAssocPat {
     a: Math,
     b: Math,
     c: Math,
     add_outer: MAdd,
 }
 
-fn add_assoc_pat<PR: PatRecSgl>() -> AddAssocPat<PR> {
+fn add_assoc_pat() -> AddAssocPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let c = Math::query_leaf();
@@ -96,14 +96,14 @@ fn add_assoc_pat<PR: PatRecSgl>() -> AddAssocPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct MulAssocPat<PR: PatRecSgl> {
+struct MulAssocPat {
     a: Math,
     b: Math,
     c: Math,
     mul_outer: MMul,
 }
 
-fn mul_assoc_pat<PR: PatRecSgl>() -> MulAssocPat<PR> {
+fn mul_assoc_pat() -> MulAssocPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let c = Math::query_leaf();
@@ -113,13 +113,13 @@ fn mul_assoc_pat<PR: PatRecSgl>() -> MulAssocPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct SubToAddNegPat<PR: PatRecSgl> {
+struct SubToAddNegPat {
     a: Math,
     b: Math,
     sub: MSub,
 }
 
-fn sub_to_add_neg_pat<PR: PatRecSgl>() -> SubToAddNegPat<PR> {
+fn sub_to_add_neg_pat() -> SubToAddNegPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let sub = MSub::query(&a, &b);
@@ -127,13 +127,13 @@ fn sub_to_add_neg_pat<PR: PatRecSgl>() -> SubToAddNegPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct AddZeroPat<PR: PatRecSgl> {
+struct AddZeroPat {
     a: Math,
     z: MConst,
     add: MAdd,
 }
 
-fn add_zero_pat<PR: PatRecSgl>() -> AddZeroPat<PR> {
+fn add_zero_pat() -> AddZeroPat {
     let a = Math::query_leaf();
     let z = MConst::query();
     let add = MAdd::query(&a, &z);
@@ -142,13 +142,13 @@ fn add_zero_pat<PR: PatRecSgl>() -> AddZeroPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct MulZeroPat<PR: PatRecSgl> {
+struct MulZeroPat {
     a: Math,
     z: MConst,
     mul: MMul,
 }
 
-fn mul_zero_pat<PR: PatRecSgl>() -> MulZeroPat<PR> {
+fn mul_zero_pat() -> MulZeroPat {
     let a = Math::query_leaf();
     let z = MConst::query();
     let mul = MMul::query(&a, &z);
@@ -157,13 +157,13 @@ fn mul_zero_pat<PR: PatRecSgl>() -> MulZeroPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct MulOnePat<PR: PatRecSgl> {
+struct MulOnePat {
     a: Math,
     o: MConst,
     mul: MMul,
 }
 
-fn mul_one_pat<PR: PatRecSgl>() -> MulOnePat<PR> {
+fn mul_one_pat() -> MulOnePat {
     let a = Math::query_leaf();
     let o = MConst::query();
     let mul = MMul::query(&a, &o);
@@ -172,12 +172,12 @@ fn mul_one_pat<PR: PatRecSgl>() -> MulOnePat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct SubSelfZeroPat<PR: PatRecSgl> {
+struct SubSelfZeroPat {
     a: Math,
     sub: MSub,
 }
 
-fn sub_self_zero_pat<PR: PatRecSgl>() -> SubSelfZeroPat<PR> {
+fn sub_self_zero_pat() -> SubSelfZeroPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let sub = MSub::query(&a, &b);
@@ -186,14 +186,14 @@ fn sub_self_zero_pat<PR: PatRecSgl>() -> SubSelfZeroPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct MulDistribPat<PR: PatRecSgl> {
+struct MulDistribPat {
     a: Math,
     b: Math,
     c: Math,
     mul: MMul,
 }
 
-fn mul_distrib_pat<PR: PatRecSgl>() -> MulDistribPat<PR> {
+fn mul_distrib_pat() -> MulDistribPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let c = Math::query_leaf();
@@ -203,14 +203,14 @@ fn mul_distrib_pat<PR: PatRecSgl>() -> MulDistribPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct AddFactorPat<PR: PatRecSgl> {
+struct AddFactorPat {
     a: Math,
     b: Math,
     c: Math,
     add: MAdd,
 }
 
-fn add_factor_pat<PR: PatRecSgl>() -> AddFactorPat<PR> {
+fn add_factor_pat() -> AddFactorPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let c = Math::query_leaf();
@@ -221,14 +221,14 @@ fn add_factor_pat<PR: PatRecSgl>() -> AddFactorPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct MulPowCombinePat<PR: PatRecSgl> {
+struct MulPowCombinePat {
     a: Math,
     b: Math,
     c: Math,
     mul: MMul,
 }
 
-fn mul_pow_combine_pat<PR: PatRecSgl>() -> MulPowCombinePat<PR> {
+fn mul_pow_combine_pat() -> MulPowCombinePat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let c = Math::query_leaf();
@@ -239,13 +239,13 @@ fn mul_pow_combine_pat<PR: PatRecSgl>() -> MulPowCombinePat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct PowOnePat<PR: PatRecSgl> {
+struct PowOnePat {
     x: Math,
     o: MConst,
     pow: MPow,
 }
 
-fn pow_one_pat<PR: PatRecSgl>() -> PowOnePat<PR> {
+fn pow_one_pat() -> PowOnePat {
     let x = Math::query_leaf();
     let o = MConst::query();
     let pow = MPow::query(&x, &o);
@@ -254,13 +254,13 @@ fn pow_one_pat<PR: PatRecSgl>() -> PowOnePat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct PowTwoPat<PR: PatRecSgl> {
+struct PowTwoPat {
     x: Math,
     t: MConst,
     pow: MPow,
 }
 
-fn pow_two_pat<PR: PatRecSgl>() -> PowTwoPat<PR> {
+fn pow_two_pat() -> PowTwoPat {
     let x = Math::query_leaf();
     let t = MConst::query();
     let pow = MPow::query(&x, &t);
@@ -269,14 +269,14 @@ fn pow_two_pat<PR: PatRecSgl>() -> PowTwoPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct DiffAddPat<PR: PatRecSgl> {
+struct DiffAddPat {
     x: Math,
     a: Math,
     b: Math,
     diff: MDiff,
 }
 
-fn diff_add_pat<PR: PatRecSgl>() -> DiffAddPat<PR> {
+fn diff_add_pat() -> DiffAddPat {
     let x = Math::query_leaf();
     let a = Math::query_leaf();
     let b = Math::query_leaf();
@@ -286,14 +286,14 @@ fn diff_add_pat<PR: PatRecSgl>() -> DiffAddPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct DiffMulPat<PR: PatRecSgl> {
+struct DiffMulPat {
     x: Math,
     a: Math,
     b: Math,
     diff: MDiff,
 }
 
-fn diff_mul_pat<PR: PatRecSgl>() -> DiffMulPat<PR> {
+fn diff_mul_pat() -> DiffMulPat {
     let x = Math::query_leaf();
     let a = Math::query_leaf();
     let b = Math::query_leaf();
@@ -303,12 +303,12 @@ fn diff_mul_pat<PR: PatRecSgl>() -> DiffMulPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct DiffSinPat<PR: PatRecSgl> {
+struct DiffSinPat {
     x: Math,
     diff: MDiff,
 }
 
-fn diff_sin_pat<PR: PatRecSgl>() -> DiffSinPat<PR> {
+fn diff_sin_pat() -> DiffSinPat {
     let x = Math::query_leaf();
     let sin = MSin::query(&x);
     let diff = MDiff::query(&x, &sin);
@@ -316,12 +316,12 @@ fn diff_sin_pat<PR: PatRecSgl>() -> DiffSinPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct DiffCosPat<PR: PatRecSgl> {
+struct DiffCosPat {
     x: Math,
     diff: MDiff,
 }
 
-fn diff_cos_pat<PR: PatRecSgl>() -> DiffCosPat<PR> {
+fn diff_cos_pat() -> DiffCosPat {
     let x = Math::query_leaf();
     let cos = MCos::query(&x);
     let diff = MDiff::query(&x, &cos);
@@ -329,13 +329,13 @@ fn diff_cos_pat<PR: PatRecSgl>() -> DiffCosPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct IntOnePat<PR: PatRecSgl> {
+struct IntOnePat {
     x: Math,
     one: MConst,
     integ: MIntegral,
 }
 
-fn int_one_pat<PR: PatRecSgl>() -> IntOnePat<PR> {
+fn int_one_pat() -> IntOnePat {
     let x = Math::query_leaf();
     let one = MConst::query();
     let integ = MIntegral::query(&one, &x);
@@ -344,12 +344,12 @@ fn int_one_pat<PR: PatRecSgl>() -> IntOnePat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct IntCosPat<PR: PatRecSgl> {
+struct IntCosPat {
     x: Math,
     integ: MIntegral,
 }
 
-fn int_cos_pat<PR: PatRecSgl>() -> IntCosPat<PR> {
+fn int_cos_pat() -> IntCosPat {
     let x = Math::query_leaf();
     let cos = MCos::query(&x);
     let integ = MIntegral::query(&cos, &x);
@@ -357,12 +357,12 @@ fn int_cos_pat<PR: PatRecSgl>() -> IntCosPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct IntSinPat<PR: PatRecSgl> {
+struct IntSinPat {
     x: Math,
     integ: MIntegral,
 }
 
-fn int_sin_pat<PR: PatRecSgl>() -> IntSinPat<PR> {
+fn int_sin_pat() -> IntSinPat {
     let x = Math::query_leaf();
     let sin = MSin::query(&x);
     let integ = MIntegral::query(&sin, &x);
@@ -370,14 +370,14 @@ fn int_sin_pat<PR: PatRecSgl>() -> IntSinPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct IntAddPat<PR: PatRecSgl> {
+struct IntAddPat {
     f: Math,
     g: Math,
     x: Math,
     integ: MIntegral,
 }
 
-fn int_add_pat<PR: PatRecSgl>() -> IntAddPat<PR> {
+fn int_add_pat() -> IntAddPat {
     let f = Math::query_leaf();
     let g = Math::query_leaf();
     let x = Math::query_leaf();
@@ -387,14 +387,14 @@ fn int_add_pat<PR: PatRecSgl>() -> IntAddPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct IntSubPat<PR: PatRecSgl> {
+struct IntSubPat {
     f: Math,
     g: Math,
     x: Math,
     integ: MIntegral,
 }
 
-fn int_sub_pat<PR: PatRecSgl>() -> IntSubPat<PR> {
+fn int_sub_pat() -> IntSubPat {
     let f = Math::query_leaf();
     let g = Math::query_leaf();
     let x = Math::query_leaf();
@@ -404,14 +404,14 @@ fn int_sub_pat<PR: PatRecSgl>() -> IntSubPat<PR> {
 }
 
 #[eggplant::pat_vars]
-struct IntMulPat<PR: PatRecSgl> {
+struct IntMulPat {
     a: Math,
     b: Math,
     x: Math,
     integ: MIntegral,
 }
 
-fn int_mul_pat<PR: PatRecSgl>() -> IntMulPat<PR> {
+fn int_mul_pat() -> IntMulPat {
     let a = Math::query_leaf();
     let b = Math::query_leaf();
     let x = Math::query_leaf();

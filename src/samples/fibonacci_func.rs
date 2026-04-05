@@ -26,7 +26,7 @@ struct fib {
 }
 
 #[eggplant::pat_vars]
-struct FibStep<PR: PatRecSgl> {
+struct FibStep {
     x: i64,
     x1: i64,
     x2: i64,
