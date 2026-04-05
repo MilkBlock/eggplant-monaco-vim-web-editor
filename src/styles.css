@@ -185,6 +185,30 @@ select {
   padding-right: 4px;
 }
 
+.preview-stack.focus-mode {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-right: 0;
+}
+
+.hidden-card {
+  display: none;
+}
+
+.graph-card.focus-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-card.focus-card .graph-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
 .editor-mode-toggle {
   display: inline-flex;
   align-items: center;

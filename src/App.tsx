@@ -442,6 +442,7 @@ export default function App() {
   const [vimEnabled, setVimEnabled] = useState(true);
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const [transpilerEnabled] = useState(true);
   const [transpilerInput, setTranspilerInput] = useState('');
   const [transpilerStatus, setTranspilerStatus] = useState('Enable the .egg editor, then type or paste egglog code.');
@@ -922,8 +923,31 @@ export default function App() {
 
   const handleGraphDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
     event.preventDefault();
+    const targetId = findGraphNodeTargetId(event.target);
+    if (targetId) {
+      revealTargetSource(targetId);
+      setGraphContextMenu(closedGraphContextMenu);
+      return;
+    }
+    const nextFocusMode = !focusMode;
+    setFocusMode(nextFocusMode);
     setGraphContextMenu(closedGraphContextMenu);
-    setGraphZoomOpen(true);
+    setClipboardStatus(
+      nextFocusMode
+        ? 'Entered Focus Mode. Graph pane now owns the inspector area.'
+        : 'Exited Focus Mode.',
+    );
+  };
+
+  const handleToggleFocusMode = () => {
+    const nextFocusMode = !focusMode;
+    setFocusMode(nextFocusMode);
+    setGraphContextMenu(closedGraphContextMenu);
+    setClipboardStatus(
+      nextFocusMode
+        ? 'Entered Focus Mode. Graph pane now owns the inspector area.'
+        : 'Exited Focus Mode.',
+    );
   };
 
   const handleGraphZoomDoubleClick = (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -1049,11 +1073,16 @@ export default function App() {
   }, [graphContextMenu.open]);
 
   useEffect(() => {
-    if (!graphZoomOpen) {
+    if (!graphZoomOpen && !focusMode) {
       return;
     }
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (focusMode) {
+          setFocusMode(false);
+          setClipboardStatus('Exited Focus Mode.');
+          return;
+        }
         setGraphZoomOpen(false);
       }
     };
@@ -1064,7 +1093,7 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [graphZoomOpen]);
+  }, [focusMode, graphZoomOpen]);
 
   useEffect(() => {
     if (!transpilerEnabled) {
@@ -1222,20 +1251,27 @@ export default function App() {
           <div className="vim-status" ref={statusRef} />
         </section>
 
-        <section className="preview-panel">
+        <section className={focusMode ? 'preview-panel focus-mode' : 'preview-panel'}>
           <div className="toolbar">
             <div>
               <p className="eyebrow">Preview Workbench</p>
               <h2>{previewState.fileName}</h2>
             </div>
             <div className="toolbar-meta">
+              <button
+                className={focusMode ? 'action-button active' : 'action-button'}
+                onClick={handleToggleFocusMode}
+                type="button"
+              >
+                {focusMode ? 'Exit Focus Mode' : 'Focus Mode'}
+              </button>
               <span>{previewState.ruleChecks.length} checks</span>
               <span>{previewState.constraints.length} visible constraints</span>
             </div>
           </div>
 
-          <div className="preview-stack">
-            <div className="preview-card">
+          <div className={focusMode ? 'preview-stack focus-mode' : 'preview-stack'}>
+            <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
               <h3>{previewState.title}</h3>
               <p>{previewState.notice}</p>
               <div className="metric-grid">
@@ -1258,7 +1294,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="preview-card">
+            <div className={focusMode ? 'preview-card graph-card focus-card' : 'preview-card graph-card'}>
               <div className="panel-header">
                 <h3>Graph Snapshot</h3>
                 <div className="graph-toolbar">
@@ -1403,7 +1439,7 @@ export default function App() {
               <p className="subtle">{typstStatus}</p>
             </div>
 
-            <div className="preview-card">
+            <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
               <div className="panel-header">
                 <h3>Rule Checks</h3>
                 <button
@@ -1434,7 +1470,7 @@ export default function App() {
               )}
             </div>
 
-            <div className="preview-card">
+            <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
               <div className="panel-header">
                 <h3>Constraint View</h3>
                 <div className="button-row">
@@ -1487,7 +1523,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="preview-card">
+            <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
               <h3>Targets</h3>
               <div className="target-grid">
                 {fixture.ir.nodes.map((node) => {
@@ -1563,7 +1599,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="preview-card">
+            <div className={focusMode ? 'preview-card hidden-card' : 'preview-card'}>
               <h3>Rust Shape</h3>
               <div className="token-list">
                 {stats.keywordHits.map((entry) => (
