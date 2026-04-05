@@ -40,6 +40,8 @@ import fibExampleSnapshotSource from './snapshot-demos/fib_example.json?raw';
 import relationExampleSnapshotSource from './snapshot-demos/relation_example.json?raw';
 import gblDataExampleSnapshotSource from './snapshot-demos/gbl_data_example.json?raw';
 import constantPropExampleSnapshotSource from './snapshot-demos/constant_prop_example.json?raw';
+import v2EqclassCommonPathSnapshotSource from './snapshot-demos/v2_eqclass_common_path.json?raw';
+import v2EqclassUnionSnapshotSource from './snapshot-demos/v2_eqclass_union.json?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
@@ -102,6 +104,18 @@ const sampleFiles: SampleFile[] = [
 ];
 
 const snapshotDemos: SnapshotDemo[] = [
+  {
+    id: 'v2_eqclass_common_path',
+    label: 'v2_eqclass_common_path.json',
+    description: 'Eqclass-aware v2 snapshot fixture from eggplant tests: common-path profile with eq_class_payload.',
+    source: v2EqclassCommonPathSnapshotSource,
+  },
+  {
+    id: 'v2_eqclass_union',
+    label: 'v2_eqclass_union.json',
+    description: 'Eqclass-aware v2 snapshot fixture focused on union/class grouping behavior.',
+    source: v2EqclassUnionSnapshotSource,
+  },
   {
     id: 'fib_example',
     label: 'fib_example.json',
