@@ -304,6 +304,47 @@ select {
   letter-spacing: 0.005em;
 }
 
+.snapshot-typst-overlay {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 12;
+  width: min(520px, calc(100% - 36px));
+  max-height: min(52vh, 420px);
+  overflow: auto;
+  border-radius: 18px;
+  background: rgba(9, 13, 20, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  padding: 14px 16px 16px;
+}
+
+.snapshot-typst-overlay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.typst-preview.selected {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 248, 232, 0.96);
+  overflow: auto;
+}
+
+.typst-preview-selected {
+  min-width: max-content;
+}
+
+.typst-preview-selected svg {
+  display: block;
+  width: max-content;
+  max-width: none;
+  height: auto;
+}
+
 .graph-zoom-modal {
   position: fixed;
   inset: 0;

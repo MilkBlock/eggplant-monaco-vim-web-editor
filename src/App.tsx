@@ -610,6 +610,31 @@ function renderTypstPreview(
   );
 }
 
+function renderSelectedTypstPreview(
+  rendering: RenderedTypstSnippet | null,
+  fallbackSource: string,
+  status: string,
+) {
+  if (!rendering) {
+    return <div className="status-pill">{status}</div>;
+  }
+  if (rendering.mode === 'text-fallback') {
+    return (
+      <pre className="typst-fallback-text">
+        {displayTextFallbackSource(normalizeTypstMathSource(fallbackSource))}
+      </pre>
+    );
+  }
+  return (
+    <div className="typst-preview selected">
+      <div
+        className="typst-preview-selected"
+        dangerouslySetInnerHTML={{ __html: rendering.svg }}
+      />
+    </div>
+  );
+}
+
 export default function App() {
   const initialSample = sampleFiles.find((file) => file.id === defaultSampleId) ?? sampleFiles[0];
   const [selectedId, setSelectedId] = useState(initialSample.id);
@@ -632,6 +657,8 @@ export default function App() {
   const [snapshotMode, setSnapshotMode] = useState(false);
   const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('rows');
   const [snapshotSelectedTypstNodeId, setSnapshotSelectedTypstNodeId] = useState('');
+  const [snapshotSelectedTypstRendering, setSnapshotSelectedTypstRendering] = useState<RenderedTypstSnippet | null>(null);
+  const [snapshotSelectedTypstStatus, setSnapshotSelectedTypstStatus] = useState('Click a node to preview its typst formula.');
   const [selectedSnapshotDemoId, setSelectedSnapshotDemoId] = useState(snapshotDemos[0]?.id ?? '');
   const [snapshotInput, setSnapshotInput] = useState('');
   const [snapshotStatus, setSnapshotStatus] = useState('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
@@ -820,27 +847,7 @@ export default function App() {
           : snapshotGraphMode === 'typst' && snapshotModel.typstDot
             ? snapshotModel.typstDot
             : snapshotModel.rowsDot;
-        let svg = '';
-        if (snapshotGraphMode === 'typst' && snapshotModel.typstDot) {
-          if (snapshotSelectedTypstNodeId) {
-            const selectedSource = snapshotModel.typstSources[snapshotSelectedTypstNodeId];
-            if (selectedSource) {
-              const { renderWebTypstSnippets } = await import('./webTypstAdapter');
-              const renderings = await renderWebTypstSnippets([
-                { targetId: snapshotSelectedTypstNodeId, source: selectedSource },
-              ]);
-              svg = await renderDotToSvg(dot, renderings, {
-                [snapshotSelectedTypstNodeId]: selectedSource,
-              });
-            } else {
-              svg = await renderDotToSvg(dot);
-            }
-          } else {
-            svg = await renderDotToSvg(dot);
-          }
-        } else {
-          svg = await renderDotToSvg(dot);
-        }
+        const svg = await renderDotToSvg(dot);
         if (cancelled) {
           return;
         }
@@ -855,6 +862,49 @@ export default function App() {
         const message = error instanceof Error ? error.message : String(error);
         setSnapshotGraphSvg('');
         setGraphLayoutStatus(`Snapshot graph failed: ${message}`);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [snapshotGraphMode, snapshotMode, snapshotModel]);
+
+  useEffect(() => {
+    if (!snapshotMode || snapshotGraphMode !== 'typst' || !snapshotModel || !snapshotSelectedTypstNodeId) {
+      setSnapshotSelectedTypstRendering(null);
+      setSnapshotSelectedTypstStatus('Click a node to preview its typst formula.');
+      return;
+    }
+
+    const selectedSource = snapshotModel.typstSources[snapshotSelectedTypstNodeId];
+    if (!selectedSource) {
+      setSnapshotSelectedTypstRendering(null);
+      setSnapshotSelectedTypstStatus(`No typst source for ${snapshotSelectedTypstNodeId}.`);
+      return;
+    }
+
+    let cancelled = false;
+    setSnapshotSelectedTypstStatus(`Rendering typst preview for ${snapshotSelectedTypstNodeId}...`);
+    void (async () => {
+      try {
+        const { renderWebTypstSnippets } = await import('./webTypstAdapter');
+        const renderings = await renderWebTypstSnippets([
+          { targetId: snapshotSelectedTypstNodeId, source: selectedSource },
+        ]);
+        if (cancelled) {
+          return;
+        }
+        const rendering = renderings[snapshotSelectedTypstNodeId] ?? null;
+        setSnapshotSelectedTypstRendering(rendering);
+        setSnapshotSelectedTypstStatus(rendering ? 'Typst preview ready.' : 'Typst preview unavailable.');
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        setSnapshotSelectedTypstRendering(null);
+        setSnapshotSelectedTypstStatus(`Typst preview failed: ${message}`);
       }
     })();
 
@@ -1893,6 +1943,30 @@ export default function App() {
                 ref={graphPreviewRef}
                 dangerouslySetInnerHTML={{ __html: snapshotMode ? snapshotGraphSvg : graphSvg }}
               />
+              {snapshotMode && snapshotGraphMode === 'typst' && snapshotSelectedTypstNodeId ? (
+                <div className="snapshot-typst-overlay">
+                  <div className="snapshot-typst-overlay-header">
+                    <strong>{snapshotSelectedTypstNodeId}</strong>
+                    <button
+                      className="action-button"
+                      onClick={() => {
+                        setSnapshotSelectedTypstNodeId('');
+                        setSnapshotSelectedTypstRendering(null);
+                        setSnapshotSelectedTypstStatus('Click a node to preview its typst formula.');
+                      }}
+                      type="button"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <p className="subtle">{snapshotSelectedTypstStatus}</p>
+                  {renderSelectedTypstPreview(
+                    snapshotSelectedTypstRendering,
+                    snapshotModel?.typstSources[snapshotSelectedTypstNodeId] ?? '',
+                    snapshotSelectedTypstStatus,
+                  )}
+                </div>
+              ) : null}
               {!snapshotMode && graphContextMenu.open ? (
                 <div
                   className="graph-context-menu"
