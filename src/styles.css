@@ -296,20 +296,20 @@ select {
   position: fixed;
   inset: 0;
   z-index: 80;
-  background: rgba(4, 6, 10, 0.74);
+  background: rgba(4, 6, 10, 0.88);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
 }
 
 .graph-zoom-panel {
-  width: min(96vw, 1600px);
-  height: min(92vh, 1100px);
-  border-radius: 18px;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
   background: rgba(12, 16, 24, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  border: none;
+  box-shadow: none;
   display: grid;
   grid-template-rows: auto 1fr;
   overflow: hidden;
@@ -327,12 +327,17 @@ select {
 .graph-zoom-content {
   overflow: auto;
   padding: 18px;
+  cursor: grab;
 }
 
 .graph-zoom-canvas {
   transform-origin: top left;
   width: max-content;
   min-width: 100%;
+}
+
+.graph-zoom-content:active {
+  cursor: grabbing;
 }
 
 .graph-zoom-content svg {

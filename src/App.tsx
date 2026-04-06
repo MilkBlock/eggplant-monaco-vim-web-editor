@@ -537,6 +537,20 @@ export default function App() {
   const statusRef = useRef<HTMLDivElement | null>(null);
   const graphPreviewRef = useRef<HTMLDivElement | null>(null);
   const graphZoomContentRef = useRef<HTMLDivElement | null>(null);
+  const graphZoomPanRef = useRef<{
+    active: boolean;
+    startX: number;
+    startY: number;
+    startScrollLeft: number;
+    startScrollTop: number;
+  }>({
+    active: false,
+    startX: 0,
+    startY: 0,
+    startScrollLeft: 0,
+    startScrollTop: 0,
+  });
+  const graphZoomSuppressClickRef = useRef(false);
   const editorRef = useRef<MonacoEditorInstance | null>(null);
   const eggEditorRef = useRef<MonacoEditorInstance | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
@@ -1074,6 +1088,10 @@ export default function App() {
   };
 
   const handleGraphClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (graphZoomSuppressClickRef.current) {
+      graphZoomSuppressClickRef.current = false;
+      return;
+    }
     if (snapshotMode) {
       return;
     }
@@ -1084,6 +1102,9 @@ export default function App() {
     handleNodeDrilldown(targetId);
     revealTargetSource(targetId);
     setGraphContextMenu(closedGraphContextMenu);
+    if (graphZoomOpen) {
+      setGraphZoomOpen(false);
+    }
   };
 
   const handleGraphContextMenu = (event: ReactMouseEvent<HTMLDivElement>) => {
@@ -1167,6 +1188,53 @@ export default function App() {
 
       return next;
     });
+  };
+
+  const handleGraphZoomPointerDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const container = graphZoomContentRef.current;
+    if (!container || event.button !== 0) {
+      return;
+    }
+
+    graphZoomPanRef.current = {
+      active: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      startScrollLeft: container.scrollLeft,
+      startScrollTop: container.scrollTop,
+    };
+  };
+
+  const handleGraphZoomPointerMove = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const container = graphZoomContentRef.current;
+    const pan = graphZoomPanRef.current;
+    if (!container || !pan.active) {
+      return;
+    }
+
+    const deltaX = event.clientX - pan.startX;
+    const deltaY = event.clientY - pan.startY;
+    if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) {
+      graphZoomSuppressClickRef.current = true;
+    }
+    container.scrollLeft = pan.startScrollLeft - deltaX;
+    container.scrollTop = pan.startScrollTop - deltaY;
+  };
+
+  const handleGraphZoomPointerUp = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const pan = graphZoomPanRef.current;
+    if (!pan.active) {
+      return;
+    }
+
+    graphZoomPanRef.current = {
+      active: false,
+      startX: 0,
+      startY: 0,
+      startScrollLeft: 0,
+      startScrollTop: 0,
+    };
+    event.preventDefault();
   };
 
   const handleRefresh = () => {
@@ -2015,6 +2083,10 @@ export default function App() {
               ref={graphZoomContentRef}
               onClick={handleGraphClick}
               onDoubleClick={handleGraphZoomDoubleClick}
+              onMouseDown={handleGraphZoomPointerDown}
+              onMouseMove={handleGraphZoomPointerMove}
+              onMouseUp={handleGraphZoomPointerUp}
+              onMouseLeave={handleGraphZoomPointerUp}
               onWheel={handleGraphZoomWheel}
             >
               <div
