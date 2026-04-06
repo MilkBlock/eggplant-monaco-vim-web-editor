@@ -678,6 +678,19 @@ export default function App() {
   const graphPreviewRef = useRef<HTMLDivElement | null>(null);
   const graphZoomContentRef = useRef<HTMLDivElement | null>(null);
   const snapshotFileInputRef = useRef<HTMLInputElement | null>(null);
+  const snapshotTypstOverlayDragRef = useRef<{
+    active: boolean;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  }>({
+    active: false,
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+  });
   const graphZoomPanRef = useRef<{
     active: boolean;
     startX: number;
@@ -1479,6 +1492,18 @@ export default function App() {
     event.preventDefault();
   };
 
+  const handleSnapshotTypstOverlayDragStart = (event: ReactMouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    snapshotTypstOverlayDragRef.current = {
+      active: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: snapshotTypstOverlayPosition.x,
+      originY: snapshotTypstOverlayPosition.y,
+    };
+  };
+
   const handleRefresh = () => {
     setClipboardStatus('Refreshing extractor, typst, and graph layout...');
     setGraphContextMenu(closedGraphContextMenu);
@@ -1617,6 +1642,30 @@ export default function App() {
       setGraphZoomScale(1);
     }
   }, [graphZoomState.open]);
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      const drag = snapshotTypstOverlayDragRef.current;
+      if (!drag.active) {
+        return;
+      }
+      setSnapshotTypstOverlayPosition({
+        x: drag.originX + (event.clientX - drag.startX),
+        y: drag.originY + (event.clientY - drag.startY),
+      });
+    };
+
+    const handleMouseUp = () => {
+      snapshotTypstOverlayDragRef.current.active = false;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   useEffect(() => {
     if (!transpilerEnabled) {
@@ -1959,7 +2008,7 @@ export default function App() {
                   onClick={(event) => event.stopPropagation()}
                   style={{ left: `${snapshotTypstOverlayPosition.x}px`, top: `${snapshotTypstOverlayPosition.y}px` }}
                 >
-                  <div className="snapshot-typst-overlay-header">
+                  <div className="snapshot-typst-overlay-header" onMouseDown={handleSnapshotTypstOverlayDragStart}>
                     <strong>{snapshotSelectedTypstNodeId}</strong>
                     <div className="button-row">
                       <span className="status-pill">Size {Math.round(snapshotTypstPreviewScale * 100)}%</span>
@@ -1989,7 +2038,7 @@ export default function App() {
                     />
                   </label>
                   <p className="subtle">{snapshotSelectedTypstStatus}</p>
-                  <div style={{ transform: `scale(${snapshotTypstPreviewScale})`, transformOrigin: 'top left' }}>
+                  <div style={{ zoom: snapshotTypstPreviewScale }}>
                     {renderSelectedTypstPreview(
                       snapshotSelectedTypstRendering,
                       snapshotModel?.typstSources[snapshotSelectedTypstNodeId] ?? '',

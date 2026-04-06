@@ -309,7 +309,8 @@ select {
   left: 0;
   top: 0;
   z-index: 12;
-  width: min(520px, calc(100% - 36px));
+  width: fit-content;
+  max-width: min(80vw, calc(100vw - 36px));
   max-height: min(52vh, 420px);
   overflow: auto;
   border-radius: 18px;
@@ -324,6 +325,8 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  cursor: move;
+  user-select: none;
 }
 
 .snapshot-typst-size-control {
@@ -343,6 +346,8 @@ select {
   border-radius: 16px;
   background: rgba(255, 248, 232, 0.96);
   overflow: auto;
+  width: fit-content;
+  max-width: min(72vw, calc(100vw - 72px));
 }
 
 .typst-preview-selected {
