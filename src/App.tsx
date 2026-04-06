@@ -229,6 +229,17 @@ type GraphZoomState = {
   svg: string;
 };
 
+type SnapshotTypstOverlay = {
+  id: string;
+  nodeId: string;
+  source: string;
+  status: string;
+  rendering: RenderedTypstSnippet | null;
+  x: number;
+  y: number;
+  scale: number;
+};
+
 type MonacoEditorInstance = Parameters<OnMount>[0];
 
 type RangeLike = {
@@ -635,6 +646,13 @@ function renderSelectedTypstPreview(
   );
 }
 
+function closeSnapshotTypstOverlay(
+  overlays: SnapshotTypstOverlay[],
+  overlayId: string,
+): SnapshotTypstOverlay[] {
+  return overlays.filter((overlay) => overlay.id !== overlayId);
+}
+
 export default function App() {
   const initialSample = sampleFiles.find((file) => file.id === defaultSampleId) ?? sampleFiles[0];
   const [selectedId, setSelectedId] = useState(initialSample.id);
@@ -656,11 +674,7 @@ export default function App() {
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
   const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('rows');
-  const [snapshotSelectedTypstNodeId, setSnapshotSelectedTypstNodeId] = useState('');
-  const [snapshotSelectedTypstRendering, setSnapshotSelectedTypstRendering] = useState<RenderedTypstSnippet | null>(null);
-  const [snapshotSelectedTypstStatus, setSnapshotSelectedTypstStatus] = useState('Click a node to preview its typst formula.');
-  const [snapshotTypstOverlayPosition, setSnapshotTypstOverlayPosition] = useState({ x: 18, y: 18 });
-  const [snapshotTypstPreviewScale, setSnapshotTypstPreviewScale] = useState(1);
+  const [snapshotTypstOverlays, setSnapshotTypstOverlays] = useState<SnapshotTypstOverlay[]>([]);
   const [selectedSnapshotDemoId, setSelectedSnapshotDemoId] = useState(snapshotDemos[0]?.id ?? '');
   const [snapshotInput, setSnapshotInput] = useState('');
   const [snapshotStatus, setSnapshotStatus] = useState('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
@@ -680,12 +694,14 @@ export default function App() {
   const snapshotFileInputRef = useRef<HTMLInputElement | null>(null);
   const snapshotTypstOverlayDragRef = useRef<{
     active: boolean;
+    overlayId: string;
     startX: number;
     startY: number;
     originX: number;
     originY: number;
   }>({
     active: false,
+    overlayId: '',
     startX: 0,
     startY: 0,
     originX: 0,
@@ -886,54 +902,66 @@ export default function App() {
   }, [snapshotGraphMode, snapshotMode, snapshotModel]);
 
   useEffect(() => {
-    if (!snapshotMode || snapshotGraphMode !== 'typst' || !snapshotModel || !snapshotSelectedTypstNodeId) {
-      setSnapshotSelectedTypstRendering(null);
-      setSnapshotSelectedTypstStatus('Click a node to preview its typst formula.');
+    if (!snapshotMode || snapshotGraphMode !== 'typst' || !snapshotModel) {
+      if (snapshotTypstOverlays.length > 0) {
+        setSnapshotTypstOverlays([]);
+      }
       return;
     }
 
-    const selectedSource = snapshotModel.typstSources[snapshotSelectedTypstNodeId];
-    if (!selectedSource) {
-      setSnapshotSelectedTypstRendering(null);
-      setSnapshotSelectedTypstStatus(`No typst source for ${snapshotSelectedTypstNodeId}.`);
+    const pending = snapshotTypstOverlays.filter((overlay) => overlay.status.startsWith('Rendering '));
+    if (pending.length === 0) {
       return;
     }
 
     let cancelled = false;
-    setSnapshotSelectedTypstStatus(`Rendering typst preview for ${snapshotSelectedTypstNodeId}...`);
     void (async () => {
       try {
         const { renderWebTypstSnippets } = await import('./webTypstAdapter');
-        const renderings = await renderWebTypstSnippets([
-          { targetId: snapshotSelectedTypstNodeId, source: selectedSource },
-        ]);
+        const renderings = await renderWebTypstSnippets(
+          pending.map((overlay) => ({ targetId: overlay.id, source: overlay.source })),
+        );
         if (cancelled) {
           return;
         }
-        const rendering = renderings[snapshotSelectedTypstNodeId] ?? null;
-        setSnapshotSelectedTypstRendering(rendering);
-        setSnapshotSelectedTypstStatus(rendering ? 'Typst preview ready.' : 'Typst preview unavailable.');
+        setSnapshotTypstOverlays((current) =>
+          current.map((overlay) => {
+            const rendering = renderings[overlay.id];
+            if (!overlay.status.startsWith('Rendering ')) {
+              return overlay;
+            }
+            return {
+              ...overlay,
+              rendering: rendering ?? null,
+              status: rendering ? 'Typst preview ready.' : 'Typst preview unavailable.',
+            };
+          }),
+        );
       } catch (error) {
         if (cancelled) {
           return;
         }
         const message = error instanceof Error ? error.message : String(error);
-        setSnapshotSelectedTypstRendering(null);
-        setSnapshotSelectedTypstStatus(`Typst preview failed: ${message}`);
+        setSnapshotTypstOverlays((current) =>
+          current.map((overlay) =>
+            overlay.status.startsWith('Rendering ')
+              ? { ...overlay, rendering: null, status: `Typst preview failed: ${message}` }
+              : overlay,
+          ),
+        );
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [snapshotGraphMode, snapshotMode, snapshotModel, snapshotSelectedTypstNodeId]);
+  }, [snapshotGraphMode, snapshotMode, snapshotModel, snapshotTypstOverlays]);
 
   useEffect(() => {
     if (!snapshotMode || !selectedSnapshotDemo) {
       return;
     }
-    setSnapshotSelectedTypstNodeId('');
-    setSnapshotTypstPreviewScale(1);
+    setSnapshotTypstOverlays([]);
     let cancelled = false;
     setSnapshotStatus(
       selectedSnapshotDemo.format === 'binary'
@@ -965,8 +993,7 @@ export default function App() {
     const nextInput = snapshotInput.trim();
     if (!nextInput) {
       setSnapshotModel(null);
-      setSnapshotSelectedTypstNodeId('');
-      setSnapshotTypstPreviewScale(1);
+      setSnapshotTypstOverlays([]);
       setSnapshotStatus('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
       return;
     }
@@ -974,16 +1001,14 @@ export default function App() {
       const parsed = JSON.parse(nextInput);
       const model = buildSnapshotInspectorModel(parsed);
       setSnapshotModel(model);
-      setSnapshotSelectedTypstNodeId('');
-      setSnapshotTypstPreviewScale(1);
+      setSnapshotTypstOverlays([]);
       setSnapshotGraphMode(model.typstDot ? 'typst' : model.eqClassDot ? 'eqclass' : 'rows');
       setSnapshotStatus(
         `Loaded snapshot with ${model.stats.classCount} row-graph classes, ${model.stats.eqClassCount} eq-class payload group(s), ${model.stats.functionRowCount} function row(s), and ${model.stats.factCount} fact row(s).`,
       );
     } catch (error) {
       setSnapshotModel(null);
-      setSnapshotSelectedTypstNodeId('');
-      setSnapshotTypstPreviewScale(1);
+      setSnapshotTypstOverlays([]);
       const message = error instanceof Error ? error.message : String(error);
       setSnapshotStatus(`Snapshot parse failed: ${message}`);
     }
@@ -1338,11 +1363,22 @@ export default function App() {
     if (snapshotMode && (!graphZoomState.open || graphZoomState.sourceMode === 'snapshot')) {
       if (snapshotGraphMode === 'typst') {
         const targetId = findGraphNodeTargetId(event.target);
-        setSnapshotSelectedTypstNodeId(targetId);
-        setSnapshotTypstOverlayPosition({
-          x: event.clientX,
-          y: event.clientY,
-        });
+        const source = targetId ? snapshotModel?.typstSources[targetId] ?? '' : '';
+        if (targetId && source) {
+          setSnapshotTypstOverlays((current) => [
+            ...current,
+            {
+              id: `${targetId}:${Date.now()}:${current.length}`,
+              nodeId: targetId,
+              source,
+              status: `Rendering typst preview for ${targetId}...`,
+              rendering: null,
+              x: event.clientX,
+              y: event.clientY,
+              scale: 1,
+            },
+          ]);
+        }
       }
       return;
     }
@@ -1492,15 +1528,16 @@ export default function App() {
     event.preventDefault();
   };
 
-  const handleSnapshotTypstOverlayDragStart = (event: ReactMouseEvent<HTMLDivElement>) => {
+  const handleSnapshotTypstOverlayDragStart = (overlayId: string, x: number, y: number, event: ReactMouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
     snapshotTypstOverlayDragRef.current = {
       active: true,
+      overlayId,
       startX: event.clientX,
       startY: event.clientY,
-      originX: snapshotTypstOverlayPosition.x,
-      originY: snapshotTypstOverlayPosition.y,
+      originX: x,
+      originY: y,
     };
   };
 
@@ -1649,10 +1686,17 @@ export default function App() {
       if (!drag.active) {
         return;
       }
-      setSnapshotTypstOverlayPosition({
-        x: drag.originX + (event.clientX - drag.startX),
-        y: drag.originY + (event.clientY - drag.startY),
-      });
+      setSnapshotTypstOverlays((current) =>
+        current.map((overlay) =>
+          overlay.id === drag.overlayId
+            ? {
+                ...overlay,
+                x: drag.originX + (event.clientX - drag.startX),
+                y: drag.originY + (event.clientY - drag.startY),
+              }
+            : overlay,
+        ),
+      );
     };
 
     const handleMouseUp = () => {
@@ -2002,51 +2046,54 @@ export default function App() {
                 ref={graphPreviewRef}
                 dangerouslySetInnerHTML={{ __html: snapshotMode ? snapshotGraphSvg : graphSvg }}
               />
-              {snapshotMode && snapshotGraphMode === 'typst' && snapshotSelectedTypstNodeId ? (
-                <div
-                  className="snapshot-typst-overlay"
-                  onClick={(event) => event.stopPropagation()}
-                  style={{ left: `${snapshotTypstOverlayPosition.x}px`, top: `${snapshotTypstOverlayPosition.y}px` }}
-                >
-                  <div className="snapshot-typst-overlay-header" onMouseDown={handleSnapshotTypstOverlayDragStart}>
-                    <strong>{snapshotSelectedTypstNodeId}</strong>
-                    <div className="button-row">
-                      <span className="status-pill">Size {Math.round(snapshotTypstPreviewScale * 100)}%</span>
-                      <button
-                        className="action-button"
-                        onClick={() => {
-                          setSnapshotSelectedTypstNodeId('');
-                          setSnapshotSelectedTypstRendering(null);
-                          setSnapshotSelectedTypstStatus('Click a node to preview its typst formula.');
-                          setSnapshotTypstPreviewScale(1);
-                        }}
-                        type="button"
+              {snapshotMode && snapshotGraphMode === 'typst'
+                ? snapshotTypstOverlays.map((overlay) => (
+                    <div
+                      className="snapshot-typst-overlay"
+                      key={overlay.id}
+                      onClick={(event) => event.stopPropagation()}
+                      style={{ left: `${overlay.x}px`, top: `${overlay.y}px` }}
+                    >
+                      <div
+                        className="snapshot-typst-overlay-header"
+                        onMouseDown={(event) => handleSnapshotTypstOverlayDragStart(overlay.id, overlay.x, overlay.y, event)}
                       >
-                        Close
-                      </button>
+                        <strong>{overlay.nodeId}</strong>
+                        <div className="button-row">
+                          <span className="status-pill">Size {Math.round(overlay.scale * 100)}%</span>
+                          <button
+                            className="action-button"
+                            onClick={() => setSnapshotTypstOverlays((current) => closeSnapshotTypstOverlay(current, overlay.id))}
+                            type="button"
+                          >
+                            Close
+                          </button>
+                        </div>
+                      </div>
+                      <label className="snapshot-typst-size-control">
+                        <span>Display Size</span>
+                        <input
+                          max="2.5"
+                          min="0.5"
+                          onChange={(event) =>
+                            setSnapshotTypstOverlays((current) =>
+                              current.map((entry) =>
+                                entry.id === overlay.id ? { ...entry, scale: Number(event.target.value) } : entry,
+                              ),
+                            )
+                          }
+                          step="0.05"
+                          type="range"
+                          value={overlay.scale}
+                        />
+                      </label>
+                      <p className="subtle">{overlay.status}</p>
+                      <div style={{ zoom: overlay.scale }}>
+                        {renderSelectedTypstPreview(overlay.rendering, overlay.source, overlay.status)}
+                      </div>
                     </div>
-                  </div>
-                  <label className="snapshot-typst-size-control">
-                    <span>Display Size</span>
-                    <input
-                      max="2.5"
-                      min="0.5"
-                      onChange={(event) => setSnapshotTypstPreviewScale(Number(event.target.value))}
-                      step="0.05"
-                      type="range"
-                      value={snapshotTypstPreviewScale}
-                    />
-                  </label>
-                  <p className="subtle">{snapshotSelectedTypstStatus}</p>
-                  <div style={{ zoom: snapshotTypstPreviewScale }}>
-                    {renderSelectedTypstPreview(
-                      snapshotSelectedTypstRendering,
-                      snapshotModel?.typstSources[snapshotSelectedTypstNodeId] ?? '',
-                      snapshotSelectedTypstStatus,
-                    )}
-                  </div>
-                </div>
-              ) : null}
+                  ))
+                : null}
               {!snapshotMode && graphContextMenu.open ? (
                 <div
                   className="graph-context-menu"
