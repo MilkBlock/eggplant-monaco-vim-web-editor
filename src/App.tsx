@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type MouseEvent as ReactMouseEvent,
   type WheelEvent as ReactWheelEvent,
 } from 'react';
@@ -52,9 +53,14 @@ import mathMicrobenchmarkSnapshotSource from './snapshot-demos/math_microbenchma
 import v2EqclassCommonPathSnapshotSource from './snapshot-demos/v2_eqclass_common_path.json?raw';
 import v2EqclassUnionSnapshotSource from './snapshot-demos/v2_eqclass_union.json?raw';
 import typstMetadataExampleSnapshotSource from './snapshot-demos/typst_metadata_example.json?raw';
+import commonPathBinarySnapshotUrl from './snapshot-demos/common_path.egbin?url';
+import plainSourceBinarySnapshotUrl from './snapshot-demos/plain_source_non_goal.egbin?url';
+import v2EqclassCommonPathBinarySnapshotUrl from './snapshot-demos/v2_eqclass_common_path.egbin?url';
+import v2EqclassUnionBinarySnapshotUrl from './snapshot-demos/v2_eqclass_union.egbin?url';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
+import { decodeBinaryPersistedSnapshot } from './snapshotBinary';
 import { transpileEggSource } from './webTranspiler';
 
 type SampleFile = {
@@ -77,7 +83,9 @@ type SnapshotDemo = {
   id: string;
   label: string;
   description: string;
-  source: string;
+  format: 'json' | 'binary';
+  source?: string;
+  url?: string;
 };
 
 const sampleFiles: SampleFile[] = [
@@ -118,49 +126,85 @@ const snapshotDemos: SnapshotDemo[] = [
     id: 'v2_eqclass_common_path',
     label: 'v2_eqclass_common_path.json',
     description: 'Eqclass-aware v2 snapshot fixture from eggplant tests: common-path profile with eq_class_payload.',
+    format: 'json',
     source: v2EqclassCommonPathSnapshotSource,
   },
   {
     id: 'v2_eqclass_union',
     label: 'v2_eqclass_union.json',
     description: 'Eqclass-aware v2 snapshot fixture focused on union/class grouping behavior.',
+    format: 'json',
     source: v2EqclassUnionSnapshotSource,
   },
   {
     id: 'typst_metadata_example',
     label: 'typst_metadata_example.json',
     description: 'Real v2 snapshot with constructor metadata carrying typst_template + precedence.',
+    format: 'json',
     source: typstMetadataExampleSnapshotSource,
   },
   {
     id: 'math_microbenchmark_v2',
     label: 'math_microbenchmark_v2.json',
     description: 'Real v2 snapshot from math_microbenchmark using a minimal standalone driver with two rewrite passes to keep the demo interactive.',
+    format: 'json',
     source: mathMicrobenchmarkSnapshotSource,
   },
   {
     id: 'fib_example',
     label: 'fib_example.json',
     description: 'Snapshot derived from the fib example: function-table rows plus rule-driven growth.',
+    format: 'json',
     source: fibExampleSnapshotSource,
   },
   {
     id: 'relation_example',
     label: 'relation_example.json',
     description: 'Snapshot derived from the relation example: edge/path expansion with mark rows.',
+    format: 'json',
     source: relationExampleSnapshotSource,
   },
   {
     id: 'gbl_data_example',
     label: 'gbl_data_example.json',
     description: 'Snapshot derived from the gbl_data example family: arithmetic constructor graph.',
+    format: 'json',
     source: gblDataExampleSnapshotSource,
   },
   {
     id: 'constant_prop_example',
     label: 'constant_prop_example.json',
     description: 'Snapshot derived from the constant_prop example: arithmetic rewrite rows over constants.',
+    format: 'json',
     source: constantPropExampleSnapshotSource,
+  },
+  {
+    id: 'binary_v2_eqclass_common_path',
+    label: 'v2_eqclass_common_path.egbin',
+    description: 'Binary v2 snapshot fixture using the new MessagePack envelope format.',
+    format: 'binary',
+    url: v2EqclassCommonPathBinarySnapshotUrl,
+  },
+  {
+    id: 'binary_v2_eqclass_union',
+    label: 'v2_eqclass_union.egbin',
+    description: 'Binary v2 snapshot fixture focused on union/class grouping behavior.',
+    format: 'binary',
+    url: v2EqclassUnionBinarySnapshotUrl,
+  },
+  {
+    id: 'binary_common_path',
+    label: 'common_path.egbin',
+    description: 'Binary v1 snapshot fixture for the common-path baseline.',
+    format: 'binary',
+    url: commonPathBinarySnapshotUrl,
+  },
+  {
+    id: 'binary_plain_source_non_goal',
+    label: 'plain_source_non_goal.egbin',
+    description: 'Binary v1 snapshot fixture without eq-class payload, useful for non-goal source coverage.',
+    format: 'binary',
+    url: plainSourceBinarySnapshotUrl,
   },
 ];
 
@@ -476,6 +520,60 @@ function mergeTypstSources(
   return merged;
 }
 
+async function loadSnapshotDemoText(demo: SnapshotDemo): Promise<{
+  text: string;
+  status: string;
+}> {
+  if (demo.format === 'json') {
+    return {
+      text: demo.source ?? '',
+      status: `Loaded JSON snapshot demo ${demo.label}.`,
+    };
+  }
+
+  const response = await fetch(demo.url ?? '');
+  if (!response.ok) {
+    throw new Error(`failed to fetch ${demo.label}: ${response.status} ${response.statusText}`);
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  const { header, snapshot } = decodeBinaryPersistedSnapshot(bytes);
+  return {
+    text: JSON.stringify(snapshot, null, 2),
+    status: `Loaded binary snapshot demo ${demo.label} (${header.payload_codec}, ${bytes.length} bytes).`,
+  };
+}
+
+async function loadSnapshotFile(file: File): Promise<{
+  text: string;
+  status: string;
+}> {
+  const lowerName = file.name.toLowerCase();
+  if (lowerName.endsWith('.egbin')) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const { header, snapshot } = decodeBinaryPersistedSnapshot(bytes);
+    return {
+      text: JSON.stringify(snapshot, null, 2),
+      status: `Loaded uploaded binary snapshot ${file.name} (${header.payload_codec}, ${bytes.length} bytes).`,
+    };
+  }
+
+  const text = await file.text();
+  try {
+    JSON.parse(text);
+    return {
+      text,
+      status: `Loaded uploaded JSON snapshot ${file.name}.`,
+    };
+  } catch {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const { header, snapshot } = decodeBinaryPersistedSnapshot(bytes);
+    return {
+      text: JSON.stringify(snapshot, null, 2),
+      status: `Loaded uploaded binary snapshot ${file.name} (${header.payload_codec}, ${bytes.length} bytes).`,
+    };
+  }
+}
+
 function findGraphNodeTargetId(target: EventTarget | null): string {
   if (!(target instanceof Element)) {
     return '';
@@ -549,6 +647,7 @@ export default function App() {
   const statusRef = useRef<HTMLDivElement | null>(null);
   const graphPreviewRef = useRef<HTMLDivElement | null>(null);
   const graphZoomContentRef = useRef<HTMLDivElement | null>(null);
+  const snapshotFileInputRef = useRef<HTMLInputElement | null>(null);
   const graphZoomPanRef = useRef<{
     active: boolean;
     startX: number;
@@ -756,7 +855,31 @@ export default function App() {
     if (!snapshotMode || !selectedSnapshotDemo) {
       return;
     }
-    setSnapshotInput(selectedSnapshotDemo.source);
+    let cancelled = false;
+    setSnapshotStatus(
+      selectedSnapshotDemo.format === 'binary'
+        ? `Loading binary snapshot demo ${selectedSnapshotDemo.label}...`
+        : `Loading JSON snapshot demo ${selectedSnapshotDemo.label}...`,
+    );
+    void loadSnapshotDemoText(selectedSnapshotDemo)
+      .then(({ text, status }) => {
+        if (cancelled) {
+          return;
+        }
+        setSnapshotInput(text);
+        setSnapshotStatus(status);
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        setSnapshotInput('');
+        setSnapshotStatus(`Snapshot demo load failed: ${message}`);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedSnapshotDemo, snapshotMode]);
 
   useEffect(() => {
@@ -780,6 +903,29 @@ export default function App() {
       setSnapshotStatus(`Snapshot parse failed: ${message}`);
     }
   }, [snapshotInput]);
+
+  const handleSnapshotFileUpload = async (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    snapshotFileInputRef.current?.click();
+  };
+
+  const handleSnapshotFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    try {
+      setSnapshotStatus(`Loading uploaded snapshot ${file.name}...`);
+      const { text, status } = await loadSnapshotFile(file);
+      setSnapshotInput(text);
+      setSnapshotStatus(status);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setSnapshotStatus(`Uploaded snapshot parse failed: ${message}`);
+    } finally {
+      event.target.value = '';
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1487,10 +1633,23 @@ export default function App() {
               </select>
             </label>
             {selectedSnapshotDemo ? <p className="subtle">{selectedSnapshotDemo.description}</p> : null}
+            <div className="button-row">
+              <button className="action-button" onClick={handleSnapshotFileUpload} type="button">
+                Upload Snapshot
+              </button>
+              <span className="status-pill">JSON / EGBIN</span>
+            </div>
+            <input
+              accept=".json,.egbin,application/json,application/octet-stream"
+              className="visually-hidden"
+              onChange={handleSnapshotFileChange}
+              ref={snapshotFileInputRef}
+              type="file"
+            />
             <textarea
               className="typst-override-input snapshot-input"
               onChange={(event) => setSnapshotInput(event.target.value)}
-              placeholder="Paste PersistedSnapshot JSON here"
+              placeholder="Paste PersistedSnapshot JSON here, or upload a .json / .egbin file"
               rows={18}
               value={snapshotInput}
             />
