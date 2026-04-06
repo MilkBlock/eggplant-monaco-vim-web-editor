@@ -1673,11 +1673,15 @@ export default function App() {
   }, [graphContextMenu.open]);
 
   useEffect(() => {
-    if (!graphZoomState.open && !focusMode) {
+    if (!graphZoomState.open && !focusMode && snapshotTypstOverlays.length === 0) {
       return;
     }
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (snapshotTypstOverlays.length > 0) {
+          setSnapshotTypstOverlays([]);
+          return;
+        }
         if (focusMode) {
           setFocusMode(false);
           setClipboardStatus('Exited Focus Mode.');
@@ -1693,7 +1697,7 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [focusMode, graphZoomState.open]);
+  }, [focusMode, graphZoomState.open, snapshotTypstOverlays.length]);
 
   useEffect(() => {
     if (graphZoomState.open) {
