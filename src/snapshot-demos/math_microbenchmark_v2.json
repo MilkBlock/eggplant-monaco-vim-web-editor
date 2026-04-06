@@ -1,0 +1,5339 @@
+{
+  "snapshot_version": 2,
+  "format": "eggplant.persisted-snapshot",
+  "profile": "eggplant-eqclass-aware-v2",
+  "producer": {
+    "crate": "eggplant",
+    "version": "0.2.7"
+  },
+  "source_schema": {
+    "engine_fingerprint": "6bf89eb96816a571c5b2b34a0eeedfd9e05b669a980747dfe17df36aa969de15",
+    "dsl_runtime_fingerprint": "1a0dbaccd51cdaeead6784528b4e71034fd3d8551af11b5ab35a659343455006",
+    "dsl_metadata_fingerprint": "7abf9d97709081c76913f09a27279e300955b581794dc6ea6d49de66882cbe1d",
+    "macro_rev": "eggplant-dsl-schema-v1"
+  },
+  "dictionary": {
+    "strings": [],
+    "symbols": [],
+    "sorts": [
+      "BigInt",
+      "BigRat",
+      "Math",
+      "StaticStr",
+      "String",
+      "Unit",
+      "bool",
+      "f64",
+      "i64"
+    ],
+    "ops": [
+      "MAdd",
+      "MConst",
+      "MCos",
+      "MDiff",
+      "MDiv",
+      "MIntegral",
+      "MLn",
+      "MMul",
+      "MPow",
+      "MSin",
+      "MSqrt",
+      "MSub",
+      "MVar"
+    ],
+    "rulesets": [
+      "math_microbenchmark_seed",
+      "math_microbenchmark_rules"
+    ]
+  },
+  "schema": {
+    "sort_decls": [
+      {
+        "sort_id": 0,
+        "name": "BigInt",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 1,
+        "name": "BigRat",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 2,
+        "name": "Math",
+        "kind": "eqsort",
+        "metadata": null
+      },
+      {
+        "sort_id": 3,
+        "name": "StaticStr",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 4,
+        "name": "String",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 5,
+        "name": "Unit",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 6,
+        "name": "bool",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 7,
+        "name": "f64",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 8,
+        "name": "i64",
+        "kind": "primitive",
+        "metadata": null
+      }
+    ],
+    "function_decls": [],
+    "constructor_decls": [
+      {
+        "op_id": 0,
+        "name": "MAdd",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{a} + {b}",
+          "precedence": 50
+        }
+      },
+      {
+        "op_id": 1,
+        "name": "MConst",
+        "input_sort_ids": [
+          8
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{n}",
+          "precedence": 100
+        }
+      },
+      {
+        "op_id": 2,
+        "name": "MCos",
+        "input_sort_ids": [
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "cos({a})",
+          "precedence": 90
+        }
+      },
+      {
+        "op_id": 3,
+        "name": "MDiff",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{f}'({x})",
+          "precedence": 90
+        }
+      },
+      {
+        "op_id": 4,
+        "name": "MDiv",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "frac({a}, {b}) ",
+          "precedence": 60
+        }
+      },
+      {
+        "op_id": 5,
+        "name": "MIntegral",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "integral {f} quad d {x}",
+          "precedence": 90
+        }
+      },
+      {
+        "op_id": 6,
+        "name": "MLn",
+        "input_sort_ids": [
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "ln {a}",
+          "precedence": 90
+        }
+      },
+      {
+        "op_id": 7,
+        "name": "MMul",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{a} * {b}",
+          "precedence": 60
+        }
+      },
+      {
+        "op_id": 8,
+        "name": "MPow",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{a}^{b}",
+          "precedence": 80
+        }
+      },
+      {
+        "op_id": 9,
+        "name": "MSin",
+        "input_sort_ids": [
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "sin({a})",
+          "precedence": 90
+        }
+      },
+      {
+        "op_id": 10,
+        "name": "MSqrt",
+        "input_sort_ids": [
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "sqrt({a})",
+          "precedence": 90
+        }
+      },
+      {
+        "op_id": 11,
+        "name": "MSub",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{a} - {b}",
+          "precedence": 50
+        }
+      },
+      {
+        "op_id": 12,
+        "name": "MVar",
+        "input_sort_ids": [
+          4
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{name}",
+          "precedence": 100
+        }
+      }
+    ],
+    "ruleset_decls": [
+      {
+        "ruleset_id": 0,
+        "name": "math_microbenchmark_seed"
+      },
+      {
+        "ruleset_id": 1,
+        "name": "math_microbenchmark_rules"
+      }
+    ]
+  },
+  "state": {
+    "facts": [],
+    "function_rows": [
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v1"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v2"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v3"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v4"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v5"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v6"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v8"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v9"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v10"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v11"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v12"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v13"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v15"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v16"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v17"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v18"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v12"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v13"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v19"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v20"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v4"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v2"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v3"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v21"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v22"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v23"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v24"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v25"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v5"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v4"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v6"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v8"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v9"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v15"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v15"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v26"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v5"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v10"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v11"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v27"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v28"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v29"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v30"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v31"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v32"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v4"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v15"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v33"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v5"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v19"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v34"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v17"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v16"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v18"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v33"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v26"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v6"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v21"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v22"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v20"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v19"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v4"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v28"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v27"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v29"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v35"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v36"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v37"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v26"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v15"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v5"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v38"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v39"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v24"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v40"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v41"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v42"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v24"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v23"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v25"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v43"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v43"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v26"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v39"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v38"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v24"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v34"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v20"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v6"
+        }
+      },
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v31"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v30"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v32"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "3",
+              "machine_value": 3
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v44"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "1",
+              "machine_value": 1
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v7"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "7",
+              "machine_value": 7
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v45"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v14"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "-1",
+              "machine_value": -1
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v46"
+        }
+      },
+      {
+        "op_id": 2,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v12"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v18"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v42"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v11"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v25"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v10"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v24"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v23"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v12"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v47"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v48"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v16"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v40"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v47"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v49"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v17"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v41"
+        }
+      },
+      {
+        "op_id": 3,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v50"
+        }
+      },
+      {
+        "op_id": 4,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v29"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v51"
+        }
+      },
+      {
+        "op_id": 4,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v22"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v52"
+        }
+      },
+      {
+        "op_id": 4,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v9"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v27"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v53"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v54"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v55"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v37"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v13"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v32"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v30"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v12"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v31"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v56"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v57"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v58"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v59"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v30"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v60"
+        }
+      },
+      {
+        "op_id": 5,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v61"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v62"
+        }
+      },
+      {
+        "op_id": 6,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v53"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v12"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v55"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v2"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v3"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v4"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v45"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v63"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v64"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v10"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v52"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v28"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v47"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v30"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v56"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v12"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v30"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v35"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v64"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v17"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v2"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v19"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v1"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v26"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v8"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v21"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v2"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v2"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v20"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v63"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v63"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v45"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v64"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v12"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v55"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v3"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v2"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v4"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v10"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v63"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v65"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v48"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v38"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v45"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v66"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v47"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v60"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v67"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v31"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v68"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v43"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v50"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v39"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v57"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v36"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v49"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v60"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v58"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v48"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v31"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v61"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v45"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v69"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v1"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v26"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v52"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v28"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v66"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v63"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v17"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v30"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v12"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v35"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v65"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v45"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v17"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v2"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v19"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v69"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v64"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v8"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v21"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v64"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v17"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v46"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v31"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v47"
+        }
+      },
+      {
+        "op_id": 7,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v30"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v47"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v56"
+        }
+      },
+      {
+        "op_id": 8,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v44"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v16"
+        }
+      },
+      {
+        "op_id": 8,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v14"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v63"
+        }
+      },
+      {
+        "op_id": 9,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v31"
+        }
+      },
+      {
+        "op_id": 10,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v70"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v8"
+        }
+      },
+      {
+        "op_id": 11,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v16"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v64"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v18"
+        }
+      },
+      {
+        "op_id": 11,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v15"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v1"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v5"
+        }
+      },
+      {
+        "op_id": 11,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v7"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v8"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v22"
+        }
+      },
+      {
+        "op_id": 11,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v27"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v52"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v29"
+        }
+      },
+      {
+        "op_id": 11,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v35"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v57"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v37"
+        }
+      },
+      {
+        "op_id": 11,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v68"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v62"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v37"
+        }
+      },
+      {
+        "op_id": 11,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v67"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v59"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v57"
+        }
+      },
+      {
+        "op_id": 12,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 4,
+            "value": {
+              "tag": "String",
+              "value": "\"x\"",
+              "machine_value": "x"
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v0"
+        }
+      },
+      {
+        "op_id": 12,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 4,
+            "value": {
+              "tag": "String",
+              "value": "\"y\"",
+              "machine_value": "y"
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v2"
+        }
+      },
+      {
+        "op_id": 12,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 4,
+            "value": {
+              "tag": "String",
+              "value": "\"five\"",
+              "machine_value": "five"
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v70"
+        }
+      }
+    ],
+    "unions": [],
+    "runs": [],
+    "fresh_id_cursor": null
+  },
+  "restore_mapping": {
+    "value_ids": [
+      {
+        "logical_id": "v0",
+        "sort_id": 2,
+        "debug_value": "(MVar \"x\")"
+      },
+      {
+        "logical_id": "v1",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MVar \"x\") (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v2",
+        "sort_id": 2,
+        "debug_value": "(MVar \"y\")"
+      },
+      {
+        "logical_id": "v3",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MVar \"x\") (MVar \"y\"))"
+      },
+      {
+        "logical_id": "v4",
+        "sort_id": 2,
+        "debug_value": "(MMul (MVar \"y\") (MAdd (MVar \"x\") (MVar \"y\")))"
+      },
+      {
+        "logical_id": "v5",
+        "sort_id": 2,
+        "debug_value": "(MSub (MAdd (MVar \"x\") (MConst 2)) (MAdd (MVar \"x\") (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v6",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MMul (MVar \"y\") (MAdd (MVar \"x\") (MVar \"y\"))) (MSub (MAdd (MVar \"x\") (MConst 2)) (MAdd (MVar \"x\") (MVar \"x\"))))"
+      },
+      {
+        "logical_id": "v7",
+        "sort_id": 2,
+        "debug_value": "(MConst 1)"
+      },
+      {
+        "logical_id": "v8",
+        "sort_id": 2,
+        "debug_value": "(MSqrt (MVar \"five\"))"
+      },
+      {
+        "logical_id": "v9",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MConst 1) (MSqrt (MVar \"five\")))"
+      },
+      {
+        "logical_id": "v10",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst 2) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v11",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MConst 1) (MMul (MConst 2) (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v12",
+        "sort_id": 2,
+        "debug_value": "(MCos (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v13",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MVar \"x\") (MCos (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v14",
+        "sort_id": 2,
+        "debug_value": "(MConst 2)"
+      },
+      {
+        "logical_id": "v15",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MVar \"x\") (MConst 2))"
+      },
+      {
+        "logical_id": "v16",
+        "sort_id": 2,
+        "debug_value": "(MPow (MVar \"x\") (MConst 3))"
+      },
+      {
+        "logical_id": "v17",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst -1) (MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\"))))"
+      },
+      {
+        "logical_id": "v18",
+        "sort_id": 2,
+        "debug_value": "(MSub (MPow (MVar \"x\") (MConst 3)) (MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\"))))"
+      },
+      {
+        "logical_id": "v19",
+        "sort_id": 2,
+        "debug_value": "(MMul (MVar \"y\") (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v20",
+        "sort_id": 2,
+        "debug_value": "(MMul (MVar \"y\") (MVar \"y\"))"
+      },
+      {
+        "logical_id": "v21",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst -1) (MSqrt (MVar \"five\")))"
+      },
+      {
+        "logical_id": "v22",
+        "sort_id": 2,
+        "debug_value": "(MSub (MConst 1) (MSqrt (MVar \"five\")))"
+      },
+      {
+        "logical_id": "v23",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MConst 1))"
+      },
+      {
+        "logical_id": "v24",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MMul (MConst 2) (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v25",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MAdd (MConst 1) (MMul (MConst 2) (MVar \"x\"))))"
+      },
+      {
+        "logical_id": "v26",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst -1) (MAdd (MVar \"x\") (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v27",
+        "sort_id": 2,
+        "debug_value": "(MDiv (MAdd (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2))"
+      },
+      {
+        "logical_id": "v28",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst -1) (MDiv (MSub (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2)))"
+      },
+      {
+        "logical_id": "v29",
+        "sort_id": 2,
+        "debug_value": "(MSub (MDiv (MAdd (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2)) (MDiv (MSub (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2)))"
+      },
+      {
+        "logical_id": "v30",
+        "sort_id": 2,
+        "debug_value": "(MIntegral (MVar \"x\") (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v31",
+        "sort_id": 2,
+        "debug_value": "(MSin (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v32",
+        "sort_id": 2,
+        "debug_value": "(MIntegral (MAdd (MVar \"x\") (MCos (MVar \"x\"))) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v33",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MMul (MVar \"y\") (MAdd (MVar \"x\") (MVar \"y\"))) (MAdd (MVar \"x\") (MConst 2)))"
+      },
+      {
+        "logical_id": "v34",
+        "sort_id": 2,
+        "debug_value": "(MAdd (MSub (MAdd (MVar \"x\") (MConst 2)) (MAdd (MVar \"x\") (MVar \"x\"))) (MMul (MVar \"y\") (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v35",
+        "sort_id": 2,
+        "debug_value": "(MMul (MCos (MVar \"x\")) (MIntegral (MVar \"x\") (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v36",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst -1) (MIntegral (MMul (MDiff (MVar \"x\") (MCos (MVar \"x\"))) (MIntegral (MVar \"x\") (MVar \"x\"))) (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v37",
+        "sort_id": 2,
+        "debug_value": "(MIntegral (MMul (MCos (MVar \"x\")) (MVar \"x\")) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v38",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst 2) (MDiff (MVar \"x\") (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v39",
+        "sort_id": 2,
+        "debug_value": "(MMul (MVar \"x\") (MDiff (MVar \"x\") (MConst 2)))"
+      },
+      {
+        "logical_id": "v40",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MPow (MVar \"x\") (MConst 3)))"
+      },
+      {
+        "logical_id": "v41",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MMul (MConst -1) (MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\")))))"
+      },
+      {
+        "logical_id": "v42",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MSub (MPow (MVar \"x\") (MConst 3)) (MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\")))))"
+      },
+      {
+        "logical_id": "v43",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst -1) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v44",
+        "sort_id": 2,
+        "debug_value": "(MConst 3)"
+      },
+      {
+        "logical_id": "v45",
+        "sort_id": 2,
+        "debug_value": "(MConst 7)"
+      },
+      {
+        "logical_id": "v46",
+        "sort_id": 2,
+        "debug_value": "(MConst -1)"
+      },
+      {
+        "logical_id": "v47",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MCos (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v48",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v49",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MDiff (MVar \"x\") (MCos (MVar \"x\"))))"
+      },
+      {
+        "logical_id": "v50",
+        "sort_id": 2,
+        "debug_value": "(MDiff (MVar \"x\") (MConst 2))"
+      },
+      {
+        "logical_id": "v51",
+        "sort_id": 2,
+        "debug_value": "(MDiv (MConst 1) (MSub (MDiv (MAdd (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2)) (MDiv (MSub (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2))))"
+      },
+      {
+        "logical_id": "v52",
+        "sort_id": 2,
+        "debug_value": "(MDiv (MSub (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2))"
+      },
+      {
+        "logical_id": "v53",
+        "sort_id": 2,
+        "debug_value": "(MLn (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v54",
+        "sort_id": 2,
+        "debug_value": "(MIntegral (MLn (MVar \"x\")) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v55",
+        "sort_id": 2,
+        "debug_value": "(MMul (MCos (MVar \"x\")) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v56",
+        "sort_id": 2,
+        "debug_value": "(MMul (MDiff (MVar \"x\") (MCos (MVar \"x\"))) (MIntegral (MVar \"x\") (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v57",
+        "sort_id": 2,
+        "debug_value": "(MIntegral (MMul (MDiff (MVar \"x\") (MCos (MVar \"x\"))) (MIntegral (MVar \"x\") (MVar \"x\"))) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v58",
+        "sort_id": 2,
+        "debug_value": "(MMul (MDiff (MVar \"x\") (MDiff (MVar \"x\") (MCos (MVar \"x\")))) (MIntegral (MIntegral (MVar \"x\") (MVar \"x\")) (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v59",
+        "sort_id": 2,
+        "debug_value": "(MIntegral (MMul (MDiff (MVar \"x\") (MDiff (MVar \"x\") (MCos (MVar \"x\")))) (MIntegral (MIntegral (MVar \"x\") (MVar \"x\")) (MVar \"x\"))) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v60",
+        "sort_id": 2,
+        "debug_value": "(MIntegral (MIntegral (MVar \"x\") (MVar \"x\")) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v61",
+        "sort_id": 2,
+        "debug_value": "(MMul (MDiff (MVar \"x\") (MVar \"x\")) (MSin (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v62",
+        "sort_id": 2,
+        "debug_value": "(MIntegral (MMul (MDiff (MVar \"x\") (MVar \"x\")) (MSin (MVar \"x\"))) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v63",
+        "sort_id": 2,
+        "debug_value": "(MMul (MVar \"x\") (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v64",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v65",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst -1) (MMul (MVar \"x\") (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v66",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst -1) (MConst 7))"
+      },
+      {
+        "logical_id": "v67",
+        "sort_id": 2,
+        "debug_value": "(MMul (MDiff (MVar \"x\") (MCos (MVar \"x\"))) (MIntegral (MIntegral (MVar \"x\") (MVar \"x\")) (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v68",
+        "sort_id": 2,
+        "debug_value": "(MMul (MVar \"x\") (MSin (MVar \"x\")))"
+      },
+      {
+        "logical_id": "v69",
+        "sort_id": 2,
+        "debug_value": "(MMul (MConst 7) (MVar \"x\"))"
+      },
+      {
+        "logical_id": "v70",
+        "sort_id": 2,
+        "debug_value": "(MVar \"five\")"
+      }
+    ],
+    "notes": [
+      "logical_id values are snapshot-local and must be remapped during import",
+      "runtime ids, hashes, and class ids are intentionally excluded from persisted semantic state"
+    ]
+  },
+  "capability_summary": {
+    "required_preconditions": [
+      "restore target must be fresh with respect to semantic state",
+      "source_schema alignment proof is required for v1 restore"
+    ],
+    "guaranteed_restorable": [
+      {
+        "key": "state.function_rows",
+        "detail": "common-path semantic rows are part of the supported v1 restore contract"
+      },
+      {
+        "key": "state.facts.eggplant_native_relations",
+        "detail": "eggplant-native relation facts are part of the supported v1 restore contract"
+      },
+      {
+        "key": "state.literal_sorts.String",
+        "detail": "built-in/common-path literal sort is restorable with machine payloads"
+      },
+      {
+        "key": "state.literal_sorts.i64",
+        "detail": "built-in/common-path literal sort is restorable with machine payloads"
+      }
+    ],
+    "non_goals": [],
+    "missing_hooks": [],
+    "other_limitations": [
+      {
+        "key": "state.unions",
+        "detail": "v1 exporter does not yet persist union history; state.unions is empty"
+      },
+      {
+        "key": "state.runs",
+        "detail": "v1 exporter does not yet persist run scheduling history; state.runs is empty"
+      },
+      {
+        "key": "schema.ruleset_decls",
+        "detail": "persisted ruleset declarations are provenance-only metadata in v1; restore ignores them and they do not imply rule body/run replay semantics"
+      },
+      {
+        "key": "eq_class_payload",
+        "detail": "v2 eq_class_payload is inspect-only metadata; restore continues to use the v1 semantic-state substrate"
+      },
+      {
+        "key": "eq_class_payload",
+        "detail": "v2 eq_class_payload is inspect-only metadata and does not participate in restore semantics"
+      }
+    ]
+  },
+  "eq_class_payload": {
+    "semantics": "inspect_only",
+    "classes": [
+      {
+        "sort_id": 2,
+        "logical_id": "v0",
+        "debug_value": "(MVar \"x\")",
+        "members": [
+          {
+            "op_id": 12,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 4,
+                "value": {
+                  "tag": "String",
+                  "value": "\"x\"",
+                  "machine_value": "x"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v1",
+        "debug_value": "(MAdd (MVar \"x\") (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v10",
+        "debug_value": "(MMul (MConst 2) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v11",
+        "debug_value": "(MAdd (MConst 1) (MMul (MConst 2) (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v10"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v10"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v12",
+        "debug_value": "(MCos (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 2,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v13",
+        "debug_value": "(MAdd (MVar \"x\") (MCos (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v12"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v12"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v14",
+        "debug_value": "(MConst 2)",
+        "members": [
+          {
+            "op_id": 1,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 8,
+                "value": {
+                  "tag": "i64",
+                  "value": "2",
+                  "machine_value": 2
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v15",
+        "debug_value": "(MAdd (MVar \"x\") (MConst 2))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v16",
+        "debug_value": "(MPow (MVar \"x\") (MConst 3))",
+        "members": [
+          {
+            "op_id": 8,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v44"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v17",
+        "debug_value": "(MMul (MConst -1) (MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\"))))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v64"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v64"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v65"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v45"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v66"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v63"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v18",
+        "debug_value": "(MSub (MPow (MVar \"x\") (MConst 3)) (MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\"))))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v16"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v17"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v17"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v16"
+              }
+            ]
+          },
+          {
+            "op_id": 11,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v16"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v64"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v19",
+        "debug_value": "(MMul (MVar \"y\") (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v2"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v2"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v2",
+        "debug_value": "(MVar \"y\")",
+        "members": [
+          {
+            "op_id": 12,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 4,
+                "value": {
+                  "tag": "String",
+                  "value": "\"y\"",
+                  "machine_value": "y"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v20",
+        "debug_value": "(MMul (MVar \"y\") (MVar \"y\"))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v2"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v21",
+        "debug_value": "(MMul (MConst -1) (MSqrt (MVar \"five\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v8"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v8"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v22",
+        "debug_value": "(MSub (MConst 1) (MSqrt (MVar \"five\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v21"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v21"
+              }
+            ]
+          },
+          {
+            "op_id": 11,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v8"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v23",
+        "debug_value": "(MDiff (MVar \"x\") (MConst 1))",
+        "members": [
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v24",
+        "debug_value": "(MDiff (MVar \"x\") (MMul (MConst 2) (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v38"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v39"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v39"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v38"
+              }
+            ]
+          },
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v10"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v25",
+        "debug_value": "(MDiff (MVar \"x\") (MAdd (MConst 1) (MMul (MConst 2) (MVar \"x\"))))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v23"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v24"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v24"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v23"
+              }
+            ]
+          },
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v11"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v26",
+        "debug_value": "(MMul (MConst -1) (MAdd (MVar \"x\") (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v43"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v43"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v1"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v27",
+        "debug_value": "(MDiv (MAdd (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2))",
+        "members": [
+          {
+            "op_id": 4,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v9"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v28",
+        "debug_value": "(MMul (MConst -1) (MDiv (MSub (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2)))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v52"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v52"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v29",
+        "debug_value": "(MSub (MDiv (MAdd (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2)) (MDiv (MSub (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2)))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v27"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v28"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v28"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v27"
+              }
+            ]
+          },
+          {
+            "op_id": 11,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v27"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v52"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v3",
+        "debug_value": "(MAdd (MVar \"x\") (MVar \"y\"))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v2"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v2"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v30",
+        "debug_value": "(MIntegral (MVar \"x\") (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v31",
+        "debug_value": "(MSin (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v12"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          },
+          {
+            "op_id": 9,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v32",
+        "debug_value": "(MIntegral (MAdd (MVar \"x\") (MCos (MVar \"x\"))) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v30"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v31"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v31"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v30"
+              }
+            ]
+          },
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v13"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v33",
+        "debug_value": "(MAdd (MMul (MVar \"y\") (MAdd (MVar \"x\") (MVar \"y\"))) (MAdd (MVar \"x\") (MConst 2)))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v4"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v15"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v34",
+        "debug_value": "(MAdd (MSub (MAdd (MVar \"x\") (MConst 2)) (MAdd (MVar \"x\") (MVar \"x\"))) (MMul (MVar \"y\") (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v5"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v19"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v35",
+        "debug_value": "(MMul (MCos (MVar \"x\")) (MIntegral (MVar \"x\") (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v12"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v30"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v30"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v12"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v36",
+        "debug_value": "(MMul (MConst -1) (MIntegral (MMul (MDiff (MVar \"x\") (MCos (MVar \"x\"))) (MIntegral (MVar \"x\") (MVar \"x\"))) (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v57"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v37",
+        "debug_value": "(MIntegral (MMul (MCos (MVar \"x\")) (MVar \"x\")) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v35"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v36"
+              }
+            ]
+          },
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v55"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          },
+          {
+            "op_id": 11,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v35"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v57"
+              }
+            ]
+          },
+          {
+            "op_id": 11,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v68"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v62"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v38",
+        "debug_value": "(MMul (MConst 2) (MDiff (MVar \"x\") (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v48"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v39",
+        "debug_value": "(MMul (MVar \"x\") (MDiff (MVar \"x\") (MConst 2)))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v50"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v4",
+        "debug_value": "(MMul (MVar \"y\") (MAdd (MVar \"x\") (MVar \"y\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v19"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v20"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v20"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v19"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v2"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v3"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v3"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v2"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v40",
+        "debug_value": "(MDiff (MVar \"x\") (MPow (MVar \"x\") (MConst 3)))",
+        "members": [
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v16"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v41",
+        "debug_value": "(MDiff (MVar \"x\") (MMul (MConst -1) (MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\")))))",
+        "members": [
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v17"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v42",
+        "debug_value": "(MDiff (MVar \"x\") (MSub (MPow (MVar \"x\") (MConst 3)) (MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\")))))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v40"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v41"
+              }
+            ]
+          },
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v18"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v43",
+        "debug_value": "(MMul (MConst -1) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v44",
+        "debug_value": "(MConst 3)",
+        "members": [
+          {
+            "op_id": 1,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 8,
+                "value": {
+                  "tag": "i64",
+                  "value": "3",
+                  "machine_value": 3
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v45",
+        "debug_value": "(MConst 7)",
+        "members": [
+          {
+            "op_id": 1,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 8,
+                "value": {
+                  "tag": "i64",
+                  "value": "7",
+                  "machine_value": 7
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v46",
+        "debug_value": "(MConst -1)",
+        "members": [
+          {
+            "op_id": 1,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 8,
+                "value": {
+                  "tag": "i64",
+                  "value": "-1",
+                  "machine_value": -1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v47",
+        "debug_value": "(MDiff (MVar \"x\") (MCos (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v12"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v31"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v48",
+        "debug_value": "(MDiff (MVar \"x\") (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v49",
+        "debug_value": "(MDiff (MVar \"x\") (MDiff (MVar \"x\") (MCos (MVar \"x\"))))",
+        "members": [
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v47"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v5",
+        "debug_value": "(MSub (MAdd (MVar \"x\") (MConst 2)) (MAdd (MVar \"x\") (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v15"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v26"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v26"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v15"
+              }
+            ]
+          },
+          {
+            "op_id": 11,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v15"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v50",
+        "debug_value": "(MDiff (MVar \"x\") (MConst 2))",
+        "members": [
+          {
+            "op_id": 3,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v51",
+        "debug_value": "(MDiv (MConst 1) (MSub (MDiv (MAdd (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2)) (MDiv (MSub (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2))))",
+        "members": [
+          {
+            "op_id": 4,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v29"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v52",
+        "debug_value": "(MDiv (MSub (MConst 1) (MSqrt (MVar \"five\"))) (MConst 2))",
+        "members": [
+          {
+            "op_id": 4,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v22"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v53",
+        "debug_value": "(MLn (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 6,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v54",
+        "debug_value": "(MIntegral (MLn (MVar \"x\")) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v53"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v55",
+        "debug_value": "(MMul (MCos (MVar \"x\")) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v12"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v12"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v56",
+        "debug_value": "(MMul (MDiff (MVar \"x\") (MCos (MVar \"x\"))) (MIntegral (MVar \"x\") (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v30"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v47"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v47"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v30"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v57",
+        "debug_value": "(MIntegral (MMul (MDiff (MVar \"x\") (MCos (MVar \"x\"))) (MIntegral (MVar \"x\") (MVar \"x\"))) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v56"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          },
+          {
+            "op_id": 11,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v67"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v59"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v58",
+        "debug_value": "(MMul (MDiff (MVar \"x\") (MDiff (MVar \"x\") (MCos (MVar \"x\")))) (MIntegral (MIntegral (MVar \"x\") (MVar \"x\")) (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v49"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v60"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v59",
+        "debug_value": "(MIntegral (MMul (MDiff (MVar \"x\") (MDiff (MVar \"x\") (MCos (MVar \"x\")))) (MIntegral (MIntegral (MVar \"x\") (MVar \"x\")) (MVar \"x\"))) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v58"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v6",
+        "debug_value": "(MAdd (MMul (MVar \"y\") (MAdd (MVar \"x\") (MVar \"y\"))) (MSub (MAdd (MVar \"x\") (MConst 2)) (MAdd (MVar \"x\") (MVar \"x\"))))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v33"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v26"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v34"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v20"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v4"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v5"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v5"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v4"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v60",
+        "debug_value": "(MIntegral (MIntegral (MVar \"x\") (MVar \"x\")) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v30"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v61",
+        "debug_value": "(MMul (MDiff (MVar \"x\") (MVar \"x\")) (MSin (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v48"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v31"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v62",
+        "debug_value": "(MIntegral (MMul (MDiff (MVar \"x\") (MVar \"x\")) (MSin (MVar \"x\"))) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 5,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v61"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v63",
+        "debug_value": "(MMul (MVar \"x\") (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          },
+          {
+            "op_id": 8,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v14"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v64",
+        "debug_value": "(MMul (MConst 7) (MMul (MVar \"x\") (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v45"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v63"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v63"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v45"
+              }
+            ]
+          },
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v69"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v65",
+        "debug_value": "(MMul (MConst -1) (MMul (MVar \"x\") (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v63"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v66",
+        "debug_value": "(MMul (MConst -1) (MConst 7))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v46"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v45"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v67",
+        "debug_value": "(MMul (MDiff (MVar \"x\") (MCos (MVar \"x\"))) (MIntegral (MIntegral (MVar \"x\") (MVar \"x\")) (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v47"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v60"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v68",
+        "debug_value": "(MMul (MVar \"x\") (MSin (MVar \"x\")))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v31"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v69",
+        "debug_value": "(MMul (MConst 7) (MVar \"x\"))",
+        "members": [
+          {
+            "op_id": 7,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v45"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v7",
+        "debug_value": "(MConst 1)",
+        "members": [
+          {
+            "op_id": 1,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 8,
+                "value": {
+                  "tag": "i64",
+                  "value": "1",
+                  "machine_value": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v70",
+        "debug_value": "(MVar \"five\")",
+        "members": [
+          {
+            "op_id": 12,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 4,
+                "value": {
+                  "tag": "String",
+                  "value": "\"five\"",
+                  "machine_value": "five"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v8",
+        "debug_value": "(MSqrt (MVar \"five\"))",
+        "members": [
+          {
+            "op_id": 10,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v70"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v9",
+        "debug_value": "(MAdd (MConst 1) (MSqrt (MVar \"five\")))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v8"
+              }
+            ]
+          },
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v8"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v7"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "unsupported-feature",
+      "message": "v1 exporter does not yet persist union history; state.unions is empty",
+      "path": "state.unions"
+    },
+    {
+      "code": "unsupported-feature",
+      "message": "v1 exporter does not yet persist run scheduling history; state.runs is empty",
+      "path": "state.runs"
+    },
+    {
+      "code": "unsupported-feature",
+      "message": "persisted ruleset declarations are provenance-only metadata in v1; restore ignores them and they do not imply rule body/run replay semantics",
+      "path": "schema.ruleset_decls"
+    },
+    {
+      "code": "inspect-only-metadata",
+      "message": "v2 eq_class_payload is inspect-only metadata; restore continues to use the v1 semantic-state substrate",
+      "path": "eq_class_payload"
+    }
+  ]
+}

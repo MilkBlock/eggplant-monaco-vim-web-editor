@@ -40,6 +40,7 @@ import fibExampleSnapshotSource from './snapshot-demos/fib_example.json?raw';
 import relationExampleSnapshotSource from './snapshot-demos/relation_example.json?raw';
 import gblDataExampleSnapshotSource from './snapshot-demos/gbl_data_example.json?raw';
 import constantPropExampleSnapshotSource from './snapshot-demos/constant_prop_example.json?raw';
+import mathMicrobenchmarkSnapshotSource from './snapshot-demos/math_microbenchmark_v2.json?raw';
 import v2EqclassCommonPathSnapshotSource from './snapshot-demos/v2_eqclass_common_path.json?raw';
 import v2EqclassUnionSnapshotSource from './snapshot-demos/v2_eqclass_union.json?raw';
 import typstMetadataExampleSnapshotSource from './snapshot-demos/typst_metadata_example.json?raw';
@@ -122,6 +123,12 @@ const snapshotDemos: SnapshotDemo[] = [
     label: 'typst_metadata_example.json',
     description: 'Real v2 snapshot with constructor metadata carrying typst_template + precedence.',
     source: typstMetadataExampleSnapshotSource,
+  },
+  {
+    id: 'math_microbenchmark_v2',
+    label: 'math_microbenchmark_v2.json',
+    description: 'Real v2 snapshot from math_microbenchmark using a minimal standalone driver with two rewrite passes to keep the demo interactive.',
+    source: mathMicrobenchmarkSnapshotSource,
   },
   {
     id: 'fib_example',
