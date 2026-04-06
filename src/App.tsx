@@ -42,6 +42,7 @@ import gblDataExampleSnapshotSource from './snapshot-demos/gbl_data_example.json
 import constantPropExampleSnapshotSource from './snapshot-demos/constant_prop_example.json?raw';
 import v2EqclassCommonPathSnapshotSource from './snapshot-demos/v2_eqclass_common_path.json?raw';
 import v2EqclassUnionSnapshotSource from './snapshot-demos/v2_eqclass_union.json?raw';
+import typstMetadataExampleSnapshotSource from './snapshot-demos/typst_metadata_example.json?raw';
 import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
@@ -115,6 +116,12 @@ const snapshotDemos: SnapshotDemo[] = [
     label: 'v2_eqclass_union.json',
     description: 'Eqclass-aware v2 snapshot fixture focused on union/class grouping behavior.',
     source: v2EqclassUnionSnapshotSource,
+  },
+  {
+    id: 'typst_metadata_example',
+    label: 'typst_metadata_example.json',
+    description: 'Real v2 snapshot with constructor metadata carrying typst_template + precedence.',
+    source: typstMetadataExampleSnapshotSource,
   },
   {
     id: 'fib_example',

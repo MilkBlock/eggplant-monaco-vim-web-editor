@@ -1,0 +1,468 @@
+{
+  "snapshot_version": 2,
+  "format": "eggplant.persisted-snapshot",
+  "profile": "eggplant-eqclass-aware-v2",
+  "producer": {
+    "crate": "eggplant",
+    "version": "0.2.7"
+  },
+  "source_schema": {
+    "engine_fingerprint": "f0d5bf8c234ecbdf2678bc6e4a30056b8aede54a45172429e72ca3d48ac9e4fd",
+    "dsl_runtime_fingerprint": "5ab7f97513b41e171cc5ea6af6d0618222c39f519153a8a9afd26956eaafa5aa",
+    "dsl_metadata_fingerprint": "3fc4bbeb0369a7cd0b01c7d2dee9c3e0a9e469d91ff91e4001e17694104a012d",
+    "macro_rev": "eggplant-dsl-schema-v1"
+  },
+  "dictionary": {
+    "strings": [],
+    "symbols": [],
+    "sorts": [
+      "BigInt",
+      "BigRat",
+      "Math",
+      "StaticStr",
+      "String",
+      "Unit",
+      "bool",
+      "f64",
+      "i64"
+    ],
+    "ops": [
+      "Add",
+      "Const",
+      "Mul"
+    ],
+    "rulesets": [
+      "commit_rule_1775449653690492000_ruleset"
+    ]
+  },
+  "schema": {
+    "sort_decls": [
+      {
+        "sort_id": 0,
+        "name": "BigInt",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 1,
+        "name": "BigRat",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 2,
+        "name": "Math",
+        "kind": "eqsort",
+        "metadata": null
+      },
+      {
+        "sort_id": 3,
+        "name": "StaticStr",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 4,
+        "name": "String",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 5,
+        "name": "Unit",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 6,
+        "name": "bool",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 7,
+        "name": "f64",
+        "kind": "primitive",
+        "metadata": null
+      },
+      {
+        "sort_id": 8,
+        "name": "i64",
+        "kind": "primitive",
+        "metadata": null
+      }
+    ],
+    "function_decls": [],
+    "constructor_decls": [
+      {
+        "op_id": 0,
+        "name": "Add",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{a} + {b}",
+          "precedence": 50
+        }
+      },
+      {
+        "op_id": 1,
+        "name": "Const",
+        "input_sort_ids": [
+          8
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{n}",
+          "precedence": 100
+        }
+      },
+      {
+        "op_id": 2,
+        "name": "Mul",
+        "input_sort_ids": [
+          2,
+          2
+        ],
+        "output_sort_id": 2,
+        "is_relation": false,
+        "merge": null,
+        "cost": null,
+        "metadata": {
+          "typst_template": "{a} * {b}",
+          "precedence": 60
+        }
+      }
+    ],
+    "ruleset_decls": [
+      {
+        "ruleset_id": 0,
+        "name": "commit_rule_1775449653690492000_ruleset"
+      }
+    ]
+  },
+  "state": {
+    "facts": [],
+    "function_rows": [
+      {
+        "op_id": 0,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v0"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v1"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v2"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "1",
+              "machine_value": 1
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v1"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "4",
+              "machine_value": 4
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v3"
+        }
+      },
+      {
+        "op_id": 1,
+        "inputs": [
+          {
+            "kind": "lit",
+            "sort_id": 8,
+            "value": {
+              "tag": "i64",
+              "value": "2",
+              "machine_value": 2
+            }
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v4"
+        }
+      },
+      {
+        "op_id": 2,
+        "inputs": [
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v3"
+          },
+          {
+            "kind": "ref",
+            "sort_id": 2,
+            "logical_id": "v4"
+          }
+        ],
+        "output": {
+          "kind": "ref",
+          "sort_id": 2,
+          "logical_id": "v0"
+        }
+      }
+    ],
+    "unions": [],
+    "runs": [],
+    "fresh_id_cursor": null
+  },
+  "restore_mapping": {
+    "value_ids": [
+      {
+        "logical_id": "v0",
+        "sort_id": 2,
+        "debug_value": "(Mul (Const 4) (Const 2))"
+      },
+      {
+        "logical_id": "v1",
+        "sort_id": 2,
+        "debug_value": "(Const 1)"
+      },
+      {
+        "logical_id": "v2",
+        "sort_id": 2,
+        "debug_value": "(Add (Mul (Const 4) (Const 2)) (Const 1))"
+      },
+      {
+        "logical_id": "v3",
+        "sort_id": 2,
+        "debug_value": "(Const 4)"
+      },
+      {
+        "logical_id": "v4",
+        "sort_id": 2,
+        "debug_value": "(Const 2)"
+      }
+    ],
+    "notes": [
+      "logical_id values are snapshot-local and must be remapped during import",
+      "runtime ids, hashes, and class ids are intentionally excluded from persisted semantic state"
+    ]
+  },
+  "capability_summary": {
+    "required_preconditions": [
+      "restore target must be fresh with respect to semantic state",
+      "source_schema alignment proof is required for v1 restore"
+    ],
+    "guaranteed_restorable": [
+      {
+        "key": "state.function_rows",
+        "detail": "common-path semantic rows are part of the supported v1 restore contract"
+      },
+      {
+        "key": "state.facts.eggplant_native_relations",
+        "detail": "eggplant-native relation facts are part of the supported v1 restore contract"
+      },
+      {
+        "key": "state.literal_sorts.i64",
+        "detail": "built-in/common-path literal sort is restorable with machine payloads"
+      }
+    ],
+    "non_goals": [],
+    "missing_hooks": [],
+    "other_limitations": [
+      {
+        "key": "state.unions",
+        "detail": "v1 exporter does not yet persist union history; state.unions is empty"
+      },
+      {
+        "key": "state.runs",
+        "detail": "v1 exporter does not yet persist run scheduling history; state.runs is empty"
+      },
+      {
+        "key": "schema.ruleset_decls",
+        "detail": "persisted ruleset declarations are provenance-only metadata in v1; restore ignores them and they do not imply rule body/run replay semantics"
+      },
+      {
+        "key": "eq_class_payload",
+        "detail": "v2 eq_class_payload is inspect-only metadata; restore continues to use the v1 semantic-state substrate"
+      },
+      {
+        "key": "eq_class_payload",
+        "detail": "v2 eq_class_payload is inspect-only metadata and does not participate in restore semantics"
+      }
+    ]
+  },
+  "eq_class_payload": {
+    "semantics": "inspect_only",
+    "classes": [
+      {
+        "sort_id": 2,
+        "logical_id": "v0",
+        "debug_value": "(Mul (Const 4) (Const 2))",
+        "members": [
+          {
+            "op_id": 2,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v3"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v4"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v1",
+        "debug_value": "(Const 1)",
+        "members": [
+          {
+            "op_id": 1,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 8,
+                "value": {
+                  "tag": "i64",
+                  "value": "1",
+                  "machine_value": 1
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v2",
+        "debug_value": "(Add (Mul (Const 4) (Const 2)) (Const 1))",
+        "members": [
+          {
+            "op_id": 0,
+            "inputs": [
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v0"
+              },
+              {
+                "kind": "ref",
+                "sort_id": 2,
+                "logical_id": "v1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v3",
+        "debug_value": "(Const 4)",
+        "members": [
+          {
+            "op_id": 1,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 8,
+                "value": {
+                  "tag": "i64",
+                  "value": "4",
+                  "machine_value": 4
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "sort_id": 2,
+        "logical_id": "v4",
+        "debug_value": "(Const 2)",
+        "members": [
+          {
+            "op_id": 1,
+            "inputs": [
+              {
+                "kind": "lit",
+                "sort_id": 8,
+                "value": {
+                  "tag": "i64",
+                  "value": "2",
+                  "machine_value": 2
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "code": "unsupported-feature",
+      "message": "v1 exporter does not yet persist union history; state.unions is empty",
+      "path": "state.unions"
+    },
+    {
+      "code": "unsupported-feature",
+      "message": "v1 exporter does not yet persist run scheduling history; state.runs is empty",
+      "path": "state.runs"
+    },
+    {
+      "code": "unsupported-feature",
+      "message": "persisted ruleset declarations are provenance-only metadata in v1; restore ignores them and they do not imply rule body/run replay semantics",
+      "path": "schema.ruleset_decls"
+    },
+    {
+      "code": "inspect-only-metadata",
+      "message": "v2 eq_class_payload is inspect-only metadata; restore continues to use the v1 semantic-state substrate",
+      "path": "eq_class_payload"
+    }
+  ]
+}
