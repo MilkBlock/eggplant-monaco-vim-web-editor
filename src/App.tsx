@@ -878,7 +878,12 @@ export default function App() {
           : snapshotGraphMode === 'typst' && snapshotModel.typstDot
             ? snapshotModel.typstDot
             : snapshotModel.rowsDot;
-        const svg = await renderDotToSvg(dot);
+        const svg = await renderDotToSvg(
+          dot,
+          {},
+          {},
+          snapshotGraphMode === 'typst' ? snapshotTypstOverlays.map((overlay) => overlay.nodeId) : [],
+        );
         if (cancelled) {
           return;
         }

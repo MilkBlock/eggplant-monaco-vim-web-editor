@@ -245,10 +245,31 @@ function sanitizeGraphvizText(root: SVGElement): void {
   }
 }
 
+function applyHighlightedNodeBorders(root: SVGElement, highlightedNodeIds: string[]): void {
+  const highlighted = new Set(highlightedNodeIds);
+  if (highlighted.size === 0) {
+    return;
+  }
+
+  for (const nodeGroup of Array.from(root.querySelectorAll('g.node'))) {
+    const title = nodeGroup.querySelector('title')?.textContent?.trim() ?? '';
+    if (!highlighted.has(title)) {
+      continue;
+    }
+
+    for (const shape of Array.from(nodeGroup.children).filter((node) =>
+      ['ellipse', 'polygon', 'rect', 'path'].includes(node.tagName.toLowerCase()),
+    )) {
+      shape.setAttribute('stroke-width', '3');
+    }
+  }
+}
+
 export async function renderDotToSvg(
   dot: string,
   typstRenderings: Record<string, RenderedTypstSnippet> = {},
   typstSources: Record<string, string> = {},
+  highlightedNodeIds: string[] = [],
 ): Promise<string> {
   const renderer = await viz();
   const svgMarkup = renderer.renderString(dot, {
@@ -260,6 +281,7 @@ export async function renderDotToSvg(
   const doc = parser.parseFromString(svgMarkup, 'image/svg+xml');
   const root = doc.documentElement as unknown as SVGElement;
   applyNodeRenderings(root, typstRenderings, typstSources);
+  applyHighlightedNodeBorders(root, highlightedNodeIds);
   sanitizeGraphvizText(root);
   return new XMLSerializer().serializeToString(root);
 }
