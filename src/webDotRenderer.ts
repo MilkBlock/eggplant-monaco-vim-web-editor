@@ -152,28 +152,21 @@ function createInlineTypstSvg(
     return null;
   }
 
-  const maxWidth = bounds.width * 0.84;
-  const maxHeight = bounds.height * 0.72;
-  if (maxWidth <= 0 || maxHeight <= 0) {
+  if (bounds.width <= 0 || bounds.height <= 0) {
     return null;
   }
 
-  const scale = Math.min(maxWidth / formulaWidth, maxHeight / formulaHeight);
+  const scale = Math.min(bounds.width / formulaWidth, bounds.height / formulaHeight);
   if (!Number.isFinite(scale) || scale <= 0) {
     return null;
   }
 
-  const width = formulaWidth * scale;
-  const height = formulaHeight * scale;
-  const x = bounds.x + (bounds.width - width) / 2;
-  const y = bounds.y + (bounds.height - height) / 2;
-
   const nestedSvg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  nestedSvg.setAttribute('x', String(x));
-  nestedSvg.setAttribute('y', String(y));
-  nestedSvg.setAttribute('width', String(width));
-  nestedSvg.setAttribute('height', String(height));
-  nestedSvg.setAttribute('overflow', 'visible');
+  nestedSvg.setAttribute('x', String(bounds.x));
+  nestedSvg.setAttribute('y', String(bounds.y));
+  nestedSvg.setAttribute('width', String(bounds.width));
+  nestedSvg.setAttribute('height', String(bounds.height));
+  nestedSvg.setAttribute('overflow', 'hidden');
   nestedSvg.setAttribute('pointer-events', 'none');
   nestedSvg.setAttribute('data-typst-rendering', 'true');
 
@@ -199,26 +192,6 @@ function collectNodeTextNodes(nodeGroup: Element): SVGTextElement[] {
   return Array.from(nodeGroup.children).filter(
     (node): node is SVGTextElement => node.tagName.toLowerCase() === 'text',
   );
-}
-
-function extractTextBandBounds(textNodes: SVGTextElement[], fallback: NodeBounds): NodeBounds {
-  if (textNodes.length === 0) {
-    return fallback;
-  }
-
-  const primary = textNodes[0];
-  const primaryY = numberAttr(primary, 'y', fallback.y + fallback.height / 2);
-  const fontSize = numberAttr(primary, 'font-size', 14);
-  const nextY = textNodes.length > 1 ? numberAttr(textNodes[1], 'y', primaryY + fontSize * 1.35) : primaryY + fontSize * 1.8;
-  const bandTop = primaryY - fontSize * 1.15;
-  const bandBottom = textNodes.length > 1 ? primaryY + (nextY - primaryY) * 0.55 : primaryY + fontSize * 0.7;
-
-  return {
-    x: fallback.x,
-    y: Math.max(fallback.y, bandTop),
-    width: fallback.width,
-    height: Math.max(fontSize * 1.4, bandBottom - bandTop),
-  };
 }
 
 function applyNodeRenderings(
@@ -247,15 +220,13 @@ function applyNodeRenderings(
     }
 
     const bounds = extractNodeBounds(nodeGroup);
-    const overlayBounds = bounds ? extractTextBandBounds(textNodes, bounds) : null;
-    const overlay = overlayBounds ? createInlineTypstSvg(root.ownerDocument, rendered, overlayBounds) : null;
+    const overlay = bounds ? createInlineTypstSvg(root.ownerDocument, rendered, bounds) : null;
     if (!overlay) {
       continue;
     }
 
-    const primaryTextNode = textNodes[0];
-    if (primaryTextNode) {
-      primaryTextNode.remove();
+    for (const textNode of textNodes) {
+      textNode.remove();
     }
     nodeGroup.appendChild(overlay);
     overlayCount += 1;

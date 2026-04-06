@@ -478,7 +478,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
         'digraph PersistedSnapshotTypst {',
         '  rankdir=LR;',
         '  graph [pad=0.3, nodesep=0.45, ranksep=0.7];',
-        '  node [shape=box, style="rounded,filled", fillcolor="#f6f2e8", color="#6b5b3e", fontname="Helvetica"];',
+        '  node [shape=box, style="filled", fixedsize=true, width=1.35, height=1.35, margin=0, fillcolor="#f6f2e8", color="#6b5b3e", fontname="Helvetica"];',
         '  edge [color="#7a7468"];',
       ]
     : null;
@@ -497,7 +497,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
       typstSources[classId] = formula.text;
       const fallbackLabel = eqClass.debug_value ?? eqClass.logical_id;
       typstLines.push(
-        `  ${quote(classId)} [label=${quote(fallbackLabel)}, shape=ellipse, fillcolor="#fff7df", color="#c26d00"];`,
+        `  ${quote(classId)} [label=${quote(fallbackLabel)}, fillcolor="#fff7df", color="#c26d00"];`,
       );
 
       const member = eqClass.members[0];
