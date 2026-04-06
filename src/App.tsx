@@ -1394,7 +1394,7 @@ export default function App() {
                 rendering: null,
                 x: event.clientX,
                 y: event.clientY,
-                scale: 1,
+                scale: 2,
                 color: colorFromSeed(overlayId),
               };
             })(),
@@ -2096,8 +2096,8 @@ export default function App() {
                       <label className="snapshot-typst-size-control">
                         <span>Display Size</span>
                         <input
-                          max="2.5"
-                          min="0.5"
+                          max="4"
+                          min="1"
                           onChange={(event) =>
                             setSnapshotTypstOverlays((current) =>
                               current.map((entry) =>
