@@ -179,6 +179,12 @@ type GraphContextMenuState = {
   nodeConstraints: PreviewConstraintEntry[];
 };
 
+type GraphZoomState = {
+  open: boolean;
+  sourceMode: 'code' | 'snapshot';
+  svg: string;
+};
+
 type MonacoEditorInstance = Parameters<OnMount>[0];
 
 type RangeLike = {
@@ -200,6 +206,12 @@ const closedGraphContextMenu: GraphContextMenuState = {
   typstSource: '',
   typstStatus: 'Typst: no source',
   nodeConstraints: [],
+};
+
+const closedGraphZoom: GraphZoomState = {
+  open: false,
+  sourceMode: 'code',
+  svg: '',
 };
 
 function countKeywordHits(source: string) {
@@ -516,7 +528,7 @@ export default function App() {
   const [clipboardStatus, setClipboardStatus] = useState('');
   const [vimEnabled, setVimEnabled] = useState(true);
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
-  const [graphZoomOpen, setGraphZoomOpen] = useState(false);
+  const [graphZoomState, setGraphZoomState] = useState<GraphZoomState>(closedGraphZoom);
   const [graphZoomScale, setGraphZoomScale] = useState(1);
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
@@ -1092,7 +1104,7 @@ export default function App() {
       graphZoomSuppressClickRef.current = false;
       return;
     }
-    if (snapshotMode) {
+    if (snapshotMode && (!graphZoomState.open || graphZoomState.sourceMode === 'snapshot')) {
       return;
     }
     const targetId = findGraphNodeTargetId(event.target);
@@ -1102,8 +1114,8 @@ export default function App() {
     handleNodeDrilldown(targetId);
     revealTargetSource(targetId);
     setGraphContextMenu(closedGraphContextMenu);
-    if (graphZoomOpen) {
-      setGraphZoomOpen(false);
+    if (graphZoomState.open) {
+      setGraphZoomState(closedGraphZoom);
     }
   };
 
@@ -1136,7 +1148,11 @@ export default function App() {
       return;
     }
     setGraphContextMenu(closedGraphContextMenu);
-    setGraphZoomOpen(true);
+    setGraphZoomState({
+      open: true,
+      sourceMode: snapshotMode ? 'snapshot' : 'code',
+      svg: snapshotMode ? snapshotGraphSvg : graphSvg,
+    });
   };
 
   const handleToggleFocusMode = () => {
@@ -1159,7 +1175,7 @@ export default function App() {
     handleNodeDrilldown(targetId);
     revealTargetSource(targetId);
     setGraphContextMenu(closedGraphContextMenu);
-    setGraphZoomOpen(false);
+    setGraphZoomState(closedGraphZoom);
   };
 
   const handleGraphZoomWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
@@ -1348,7 +1364,7 @@ export default function App() {
   }, [graphContextMenu.open]);
 
   useEffect(() => {
-    if (!graphZoomOpen && !focusMode) {
+    if (!graphZoomState.open && !focusMode) {
       return;
     }
     const handleEscape = (event: KeyboardEvent) => {
@@ -1358,7 +1374,7 @@ export default function App() {
           setClipboardStatus('Exited Focus Mode.');
           return;
         }
-        setGraphZoomOpen(false);
+        setGraphZoomState(closedGraphZoom);
       }
     };
     const previousOverflow = document.body.style.overflow;
@@ -1368,13 +1384,13 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [focusMode, graphZoomOpen]);
+  }, [focusMode, graphZoomState.open]);
 
   useEffect(() => {
-    if (graphZoomOpen) {
+    if (graphZoomState.open) {
       setGraphZoomScale(1);
     }
-  }, [graphZoomOpen]);
+  }, [graphZoomState.open]);
 
   useEffect(() => {
     if (!transpilerEnabled) {
@@ -2060,20 +2076,20 @@ export default function App() {
           </div>
         </section>
       </main>
-      {graphZoomOpen ? (
-        <div className="graph-zoom-modal" onClick={() => setGraphZoomOpen(false)}>
+      {graphZoomState.open ? (
+        <div className="graph-zoom-modal" onClick={() => setGraphZoomState(closedGraphZoom)}>
           <div
             className="graph-zoom-panel"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="graph-zoom-header">
-              <strong>Graph Snapshot</strong>
+              <strong>{graphZoomState.sourceMode === 'snapshot' ? 'Snapshot Graph' : 'Graph Snapshot'}</strong>
               <div className="button-row">
                 <span className="status-pill">Zoom {Math.round(graphZoomScale * 100)}%</span>
                 <button className="action-button" onClick={() => setGraphZoomScale(1)} type="button">
                   Reset Zoom
                 </button>
-                <button className="action-button" onClick={() => setGraphZoomOpen(false)} type="button">
+                <button className="action-button" onClick={() => setGraphZoomState(closedGraphZoom)} type="button">
                   Close
                 </button>
               </div>
@@ -2092,7 +2108,7 @@ export default function App() {
               <div
                 className="graph-zoom-canvas"
                 style={{ transform: `scale(${graphZoomScale})` }}
-                dangerouslySetInnerHTML={{ __html: graphSvg }}
+                dangerouslySetInnerHTML={{ __html: graphZoomState.svg }}
               />
             </div>
           </div>
