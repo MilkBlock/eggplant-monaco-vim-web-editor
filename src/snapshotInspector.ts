@@ -13,6 +13,11 @@ export type PersistedSnapshotFunctionDecl = {
   is_relation: boolean;
   merge?: string | null;
   cost?: number | null;
+  metadata?: {
+    typst_template?: string | null;
+    precedence?: number | null;
+    [key: string]: unknown;
+  } | null;
 };
 
 export type PersistedSnapshotValue =
@@ -136,6 +141,8 @@ export type SnapshotInspectorModel = {
   snapshot: PersistedSnapshot;
   rowsDot: string;
   eqClassDot: string | null;
+  typstDot: string | null;
+  typstSources: Record<string, string>;
   classNodes: SnapshotClassNode[];
   opNodes: SnapshotOpNode[];
   eqClasses: PersistedSnapshotEqClass[];
@@ -164,6 +171,39 @@ function valueKey(value: PersistedSnapshotValue): string {
 
 function opName(opId: number, opsById: Map<number, PersistedSnapshotFunctionDecl>): string {
   return opsById.get(opId)?.name ?? `op#${opId}`;
+}
+
+type TypstRenderedTerm = {
+  text: string;
+  precedence: number;
+};
+
+function placeholderOrder(template: string): string[] {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const match of template.matchAll(/\{([^}]+)\}/g)) {
+    const key = match[1];
+    if (!seen.has(key)) {
+      seen.add(key);
+      ordered.push(key);
+    }
+  }
+  return ordered;
+}
+
+function renderTypstTemplate(template: string, args: TypstRenderedTerm[], precedence: number): string {
+  const placeholders = placeholderOrder(template);
+  let rendered = template;
+  placeholders.forEach((placeholder, index) => {
+    const arg = args[index];
+    const text = arg
+      ? arg.precedence < precedence
+        ? `(${arg.text})`
+        : arg.text
+      : placeholder;
+    rendered = rendered.replace(new RegExp(`\\{${placeholder}\\}`, 'g'), text);
+  });
+  return rendered;
 }
 
 function unionFind(values: string[]): Map<string, string> {
@@ -341,6 +381,61 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
   lines.push('}');
 
   const eqClassPayload = snapshot.eq_class_payload ?? null;
+  const eqClassesByLogicalId = new Map(eqClassPayload?.classes.map((entry) => [entry.logical_id, entry] as const) ?? []);
+  const typstMetadataByOpId = new Map(
+    [...snapshot.schema.function_decls, ...snapshot.schema.constructor_decls].map((decl) => [
+      decl.op_id,
+      {
+        name: decl.name,
+        typstTemplate: decl.metadata?.typst_template ?? null,
+        precedence: decl.metadata?.precedence ?? Number.MAX_SAFE_INTEGER,
+      },
+    ] as const),
+  );
+
+  const renderValueTypst = (
+    value: PersistedSnapshotValue,
+    visiting: Set<string>,
+  ): TypstRenderedTerm => {
+    if (value.kind === 'lit') {
+      return {
+        text: value.value.value,
+        precedence: Number.MAX_SAFE_INTEGER,
+      };
+    }
+
+    const eqClass = eqClassesByLogicalId.get(value.logical_id);
+    if (!eqClass || eqClass.members.length === 0) {
+      return {
+        text: debugByLogicalId.get(value.logical_id) ?? value.logical_id,
+        precedence: Number.MAX_SAFE_INTEGER,
+      };
+    }
+    if (visiting.has(value.logical_id)) {
+      return {
+        text: eqClass.debug_value ?? value.logical_id,
+        precedence: Number.MAX_SAFE_INTEGER,
+      };
+    }
+
+    visiting.add(value.logical_id);
+    const member = eqClass.members[0];
+    const metadata = typstMetadataByOpId.get(member.op_id);
+    const childTerms = member.inputs.map((input) => renderValueTypst(input, visiting));
+    visiting.delete(value.logical_id);
+
+    if (metadata?.typstTemplate) {
+      return {
+        text: renderTypstTemplate(metadata.typstTemplate, childTerms, metadata.precedence),
+        precedence: metadata.precedence,
+      };
+    }
+
+    return {
+      text: `${metadata?.name ?? `op#${member.op_id}`}(${childTerms.map((term) => term.text).join(', ')})`,
+      precedence: metadata?.precedence ?? Number.MAX_SAFE_INTEGER,
+    };
+  };
   const eqClassLines = eqClassPayload
     ? [
         'digraph PersistedSnapshotEqClass {',
@@ -377,10 +472,57 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
     eqClassLines.push('}');
   }
 
+  const typstSources: Record<string, string> = {};
+  const typstLines = eqClassPayload
+    ? [
+        'digraph PersistedSnapshotTypst {',
+        '  rankdir=LR;',
+        '  graph [pad=0.3, nodesep=0.45, ranksep=0.7];',
+        '  node [shape=box, style="rounded,filled", fillcolor="#f6f2e8", color="#6b5b3e", fontname="Helvetica"];',
+        '  edge [color="#7a7468"];',
+      ]
+    : null;
+
+  if (eqClassPayload && typstLines) {
+    eqClassPayload.classes.forEach((eqClass, index) => {
+      const classId = `typst-class:${index}`;
+      const formula = renderValueTypst(
+        {
+          kind: 'ref',
+          sort_id: eqClass.sort_id,
+          logical_id: eqClass.logical_id,
+        },
+        new Set(),
+      );
+      typstSources[classId] = formula.text;
+      const fallbackLabel = eqClass.debug_value ?? eqClass.logical_id;
+      typstLines.push(
+        `  ${quote(classId)} [label=${quote(fallbackLabel)}, shape=ellipse, fillcolor="#fff7df", color="#c26d00"];`,
+      );
+
+      const member = eqClass.members[0];
+      if (!member) {
+        return;
+      }
+      member.inputs.forEach((input, inputIndex) => {
+        if (input.kind !== 'ref') {
+          return;
+        }
+        const sourceClassIndex = eqClassPayload.classes.findIndex((candidate) => candidate.logical_id === input.logical_id);
+        if (sourceClassIndex >= 0) {
+          typstLines.push(`  ${quote(`typst-class:${sourceClassIndex}`)} -> ${quote(classId)} [label=${quote(String(inputIndex))}];`);
+        }
+      });
+    });
+    typstLines.push('}');
+  }
+
   return {
     snapshot,
     rowsDot: lines.join('\n'),
     eqClassDot: eqClassLines ? eqClassLines.join('\n') : null,
+    typstDot: typstLines ? typstLines.join('\n') : null,
+    typstSources,
     classNodes,
     opNodes,
     eqClasses: eqClassPayload?.classes ?? [],

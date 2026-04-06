@@ -504,7 +504,7 @@ export default function App() {
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
-  const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass'>('rows');
+  const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('rows');
   const [selectedSnapshotDemoId, setSelectedSnapshotDemoId] = useState(snapshotDemos[0]?.id ?? '');
   const [snapshotInput, setSnapshotInput] = useState('');
   const [snapshotStatus, setSnapshotStatus] = useState('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
@@ -674,8 +674,19 @@ export default function App() {
       try {
         const dot = snapshotGraphMode === 'eqclass' && snapshotModel.eqClassDot
           ? snapshotModel.eqClassDot
-          : snapshotModel.rowsDot;
-        const svg = await renderDotToSvg(dot);
+          : snapshotGraphMode === 'typst' && snapshotModel.typstDot
+            ? snapshotModel.typstDot
+            : snapshotModel.rowsDot;
+        let svg = '';
+        if (snapshotGraphMode === 'typst' && snapshotModel.typstDot) {
+          const { renderWebTypstSnippets } = await import('./webTypstAdapter');
+          const renderings = await renderWebTypstSnippets(
+            Object.entries(snapshotModel.typstSources).map(([targetId, source]) => ({ targetId, source })),
+          );
+          svg = await renderDotToSvg(dot, renderings, snapshotModel.typstSources);
+        } else {
+          svg = await renderDotToSvg(dot);
+        }
         if (cancelled) {
           return;
         }
@@ -716,7 +727,7 @@ export default function App() {
       const parsed = JSON.parse(nextInput);
       const model = buildSnapshotInspectorModel(parsed);
       setSnapshotModel(model);
-      setSnapshotGraphMode(model.eqClassDot ? 'eqclass' : 'rows');
+      setSnapshotGraphMode(model.typstDot ? 'typst' : model.eqClassDot ? 'eqclass' : 'rows');
       setSnapshotStatus(
         `Loaded snapshot with ${model.stats.classCount} row-graph classes, ${model.stats.eqClassCount} eq-class payload group(s), ${model.stats.functionRowCount} function row(s), and ${model.stats.factCount} fact row(s).`,
       );
@@ -1524,6 +1535,14 @@ export default function App() {
                       >
                         EqClass Graph
                       </button>
+                      <button
+                        className={snapshotGraphMode === 'typst' ? 'action-button active' : 'action-button'}
+                        disabled={!snapshotModel?.typstDot}
+                        onClick={() => setSnapshotGraphMode('typst')}
+                        type="button"
+                      >
+                        Typst Graph
+                      </button>
                     </div>
                   ) : (
                     <div className="button-row">
@@ -1669,7 +1688,9 @@ export default function App() {
                 {snapshotMode
                   ? snapshotGraphMode === 'eqclass'
                     ? 'EqClass Graph uses persisted eq_class_payload classes and their member rows.'
-                    : 'Rows Graph groups persisted values into row-oriented classes using restore_mapping plus unions.'
+                    : snapshotGraphMode === 'typst'
+                      ? 'Typst Graph renders eq-class labels from persisted typst_template + precedence metadata.'
+                      : 'Rows Graph groups persisted values into row-oriented classes using restore_mapping plus unions.'
                   : typstStatus}
               </p>
             </div>
