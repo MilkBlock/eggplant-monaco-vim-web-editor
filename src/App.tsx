@@ -631,6 +631,7 @@ export default function App() {
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
   const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('rows');
+  const [snapshotSelectedTypstNodeId, setSnapshotSelectedTypstNodeId] = useState('');
   const [selectedSnapshotDemoId, setSelectedSnapshotDemoId] = useState(snapshotDemos[0]?.id ?? '');
   const [snapshotInput, setSnapshotInput] = useState('');
   const [snapshotStatus, setSnapshotStatus] = useState('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
@@ -821,11 +822,22 @@ export default function App() {
             : snapshotModel.rowsDot;
         let svg = '';
         if (snapshotGraphMode === 'typst' && snapshotModel.typstDot) {
-          const { renderWebTypstSnippets } = await import('./webTypstAdapter');
-          const renderings = await renderWebTypstSnippets(
-            Object.entries(snapshotModel.typstSources).map(([targetId, source]) => ({ targetId, source })),
-          );
-          svg = await renderDotToSvg(dot, renderings, snapshotModel.typstSources);
+          if (snapshotSelectedTypstNodeId) {
+            const selectedSource = snapshotModel.typstSources[snapshotSelectedTypstNodeId];
+            if (selectedSource) {
+              const { renderWebTypstSnippets } = await import('./webTypstAdapter');
+              const renderings = await renderWebTypstSnippets([
+                { targetId: snapshotSelectedTypstNodeId, source: selectedSource },
+              ]);
+              svg = await renderDotToSvg(dot, renderings, {
+                [snapshotSelectedTypstNodeId]: selectedSource,
+              });
+            } else {
+              svg = await renderDotToSvg(dot);
+            }
+          } else {
+            svg = await renderDotToSvg(dot);
+          }
         } else {
           svg = await renderDotToSvg(dot);
         }
@@ -849,12 +861,13 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [snapshotGraphMode, snapshotMode, snapshotModel]);
+  }, [snapshotGraphMode, snapshotMode, snapshotModel, snapshotSelectedTypstNodeId]);
 
   useEffect(() => {
     if (!snapshotMode || !selectedSnapshotDemo) {
       return;
     }
+    setSnapshotSelectedTypstNodeId('');
     let cancelled = false;
     setSnapshotStatus(
       selectedSnapshotDemo.format === 'binary'
@@ -886,6 +899,7 @@ export default function App() {
     const nextInput = snapshotInput.trim();
     if (!nextInput) {
       setSnapshotModel(null);
+      setSnapshotSelectedTypstNodeId('');
       setSnapshotStatus('Paste PersistedSnapshot JSON to inspect serialized egraph state.');
       return;
     }
@@ -893,12 +907,14 @@ export default function App() {
       const parsed = JSON.parse(nextInput);
       const model = buildSnapshotInspectorModel(parsed);
       setSnapshotModel(model);
+      setSnapshotSelectedTypstNodeId('');
       setSnapshotGraphMode(model.typstDot ? 'typst' : model.eqClassDot ? 'eqclass' : 'rows');
       setSnapshotStatus(
         `Loaded snapshot with ${model.stats.classCount} row-graph classes, ${model.stats.eqClassCount} eq-class payload group(s), ${model.stats.functionRowCount} function row(s), and ${model.stats.factCount} fact row(s).`,
       );
     } catch (error) {
       setSnapshotModel(null);
+      setSnapshotSelectedTypstNodeId('');
       const message = error instanceof Error ? error.message : String(error);
       setSnapshotStatus(`Snapshot parse failed: ${message}`);
     }
@@ -1251,6 +1267,10 @@ export default function App() {
       return;
     }
     if (snapshotMode && (!graphZoomState.open || graphZoomState.sourceMode === 'snapshot')) {
+      if (snapshotGraphMode === 'typst') {
+        const targetId = findGraphNodeTargetId(event.target);
+        setSnapshotSelectedTypstNodeId(targetId);
+      }
       return;
     }
     const targetId = findGraphNodeTargetId(event.target);

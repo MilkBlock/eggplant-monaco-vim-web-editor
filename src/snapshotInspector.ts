@@ -495,7 +495,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
         new Set(),
       );
       typstSources[classId] = formula.text;
-      const fallbackLabel = eqClass.debug_value ?? eqClass.logical_id;
+      const fallbackLabel = opName(eqClass.members[0]?.op_id ?? -1, opsById);
       typstLines.push(
         `  ${quote(classId)} [label=${quote(fallbackLabel)}, fillcolor="#fff7df", color="#c26d00"];`,
       );
