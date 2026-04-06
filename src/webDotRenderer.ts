@@ -260,7 +260,15 @@ function applyHighlightedNodeBorders(root: SVGElement, highlightedNodeIds: strin
     for (const shape of Array.from(nodeGroup.children).filter((node) =>
       ['ellipse', 'polygon', 'rect', 'path'].includes(node.tagName.toLowerCase()),
     )) {
-      shape.setAttribute('stroke-width', '3');
+      shape.setAttribute('stroke-width', '5');
+      shape.setAttribute('stroke', '#ff7a1a');
+      shape.setAttribute('fill', '#fff1df');
+    }
+
+    for (const textNode of Array.from(nodeGroup.children).filter(
+      (node): node is SVGTextElement => node.tagName.toLowerCase() === 'text',
+    )) {
+      textNode.setAttribute('font-weight', '700');
     }
   }
 }
