@@ -673,7 +673,7 @@ export default function App() {
   const [graphZoomScale, setGraphZoomScale] = useState(1);
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
-  const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('rows');
+  const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('typst');
   const [snapshotTypstOverlays, setSnapshotTypstOverlays] = useState<SnapshotTypstOverlay[]>([]);
   const [selectedSnapshotDemoId, setSelectedSnapshotDemoId] = useState(snapshotDemos[0]?.id ?? '');
   const [snapshotInput, setSnapshotInput] = useState('');
@@ -904,7 +904,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [snapshotGraphMode, snapshotMode, snapshotModel]);
+  }, [snapshotGraphMode, snapshotMode, snapshotModel, snapshotTypstOverlays]);
 
   useEffect(() => {
     if (!snapshotMode || snapshotGraphMode !== 'typst' || !snapshotModel) {
