@@ -305,9 +305,9 @@ select {
 }
 
 .snapshot-typst-overlay {
-  position: absolute;
-  left: 18px;
-  top: 18px;
+  position: fixed;
+  left: 0;
+  top: 0;
   z-index: 12;
   width: min(520px, calc(100% - 36px));
   max-height: min(52vh, 420px);

@@ -1326,13 +1326,10 @@ export default function App() {
       if (snapshotGraphMode === 'typst') {
         const targetId = findGraphNodeTargetId(event.target);
         setSnapshotSelectedTypstNodeId(targetId);
-        if (graphPreviewRef.current) {
-          const rect = graphPreviewRef.current.getBoundingClientRect();
-          setSnapshotTypstOverlayPosition({
-            x: Math.max(18, event.clientX - rect.left + 14),
-            y: Math.max(18, event.clientY - rect.top + 14),
-          });
-        }
+        setSnapshotTypstOverlayPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
       }
       return;
     }
