@@ -238,6 +238,7 @@ type SnapshotTypstOverlay = {
   x: number;
   y: number;
   scale: number;
+  color: string;
 };
 
 type MonacoEditorInstance = Parameters<OnMount>[0];
@@ -653,6 +654,15 @@ function closeSnapshotTypstOverlay(
   return overlays.filter((overlay) => overlay.id !== overlayId);
 }
 
+function colorFromSeed(seed: string): string {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+  const hue = hash % 360;
+  return `hsl(${hue} 85% 54%)`;
+}
+
 export default function App() {
   const initialSample = sampleFiles.find((file) => file.id === defaultSampleId) ?? sampleFiles[0];
   const [selectedId, setSelectedId] = useState(initialSample.id);
@@ -882,7 +892,9 @@ export default function App() {
           dot,
           {},
           {},
-          snapshotGraphMode === 'typst' ? snapshotTypstOverlays.map((overlay) => overlay.nodeId) : [],
+          snapshotGraphMode === 'typst'
+            ? Object.fromEntries(snapshotTypstOverlays.map((overlay) => [overlay.nodeId, overlay.color]))
+            : {},
         );
         if (cancelled) {
           return;
@@ -1372,16 +1384,20 @@ export default function App() {
         if (targetId && source) {
           setSnapshotTypstOverlays((current) => [
             ...current,
-            {
-              id: `${targetId}:${Date.now()}:${current.length}`,
-              nodeId: targetId,
-              source,
-              status: `Rendering typst preview for ${targetId}...`,
-              rendering: null,
-              x: event.clientX,
-              y: event.clientY,
-              scale: 1,
-            },
+            (() => {
+              const overlayId = `${targetId}:${Date.now()}:${current.length}`;
+              return {
+                id: overlayId,
+                nodeId: targetId,
+                source,
+                status: `Rendering typst preview for ${targetId}...`,
+                rendering: null,
+                x: event.clientX,
+                y: event.clientY,
+                scale: 1,
+                color: colorFromSeed(overlayId),
+              };
+            })(),
           ]);
         }
       }
@@ -2057,7 +2073,7 @@ export default function App() {
                       className="snapshot-typst-overlay"
                       key={overlay.id}
                       onClick={(event) => event.stopPropagation()}
-                      style={{ left: `${overlay.x}px`, top: `${overlay.y}px` }}
+                      style={{ left: `${overlay.x}px`, top: `${overlay.y}px`, borderColor: overlay.color }}
                     >
                       <div
                         className="snapshot-typst-overlay-header"
@@ -2065,7 +2081,9 @@ export default function App() {
                       >
                         <strong>{overlay.nodeId}</strong>
                         <div className="button-row">
-                          <span className="status-pill">Size {Math.round(overlay.scale * 100)}%</span>
+                          <span className="status-pill" style={{ borderColor: overlay.color, color: overlay.color }}>
+                            Size {Math.round(overlay.scale * 100)}%
+                          </span>
                           <button
                             className="action-button"
                             onClick={() => setSnapshotTypstOverlays((current) => closeSnapshotTypstOverlay(current, overlay.id))}

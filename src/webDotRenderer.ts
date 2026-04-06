@@ -245,15 +245,17 @@ function sanitizeGraphvizText(root: SVGElement): void {
   }
 }
 
-function applyHighlightedNodeBorders(root: SVGElement, highlightedNodeIds: string[]): void {
-  const highlighted = new Set(highlightedNodeIds);
-  if (highlighted.size === 0) {
+function applyHighlightedNodeBorders(root: SVGElement, highlightedNodeColors: Record<string, string>): void {
+  const entries = Object.entries(highlightedNodeColors);
+  if (entries.length === 0) {
     return;
   }
+  const highlighted = new Map(entries);
 
   for (const nodeGroup of Array.from(root.querySelectorAll('g.node'))) {
     const title = nodeGroup.querySelector('title')?.textContent?.trim() ?? '';
-    if (!highlighted.has(title)) {
+    const color = highlighted.get(title);
+    if (!color) {
       continue;
     }
 
@@ -261,14 +263,15 @@ function applyHighlightedNodeBorders(root: SVGElement, highlightedNodeIds: strin
       ['ellipse', 'polygon', 'rect', 'path'].includes(node.tagName.toLowerCase()),
     )) {
       shape.setAttribute('stroke-width', '5');
-      shape.setAttribute('stroke', '#ff7a1a');
-      shape.setAttribute('fill', '#fff1df');
+      shape.setAttribute('stroke', color);
+      shape.setAttribute('fill', 'rgba(255, 248, 232, 0.98)');
     }
 
     for (const textNode of Array.from(nodeGroup.children).filter(
       (node): node is SVGTextElement => node.tagName.toLowerCase() === 'text',
     )) {
       textNode.setAttribute('font-weight', '700');
+      textNode.setAttribute('fill', color);
     }
   }
 }
@@ -277,7 +280,7 @@ export async function renderDotToSvg(
   dot: string,
   typstRenderings: Record<string, RenderedTypstSnippet> = {},
   typstSources: Record<string, string> = {},
-  highlightedNodeIds: string[] = [],
+  highlightedNodeColors: Record<string, string> = {},
 ): Promise<string> {
   const renderer = await viz();
   const svgMarkup = renderer.renderString(dot, {
@@ -289,7 +292,7 @@ export async function renderDotToSvg(
   const doc = parser.parseFromString(svgMarkup, 'image/svg+xml');
   const root = doc.documentElement as unknown as SVGElement;
   applyNodeRenderings(root, typstRenderings, typstSources);
-  applyHighlightedNodeBorders(root, highlightedNodeIds);
+  applyHighlightedNodeBorders(root, highlightedNodeColors);
   sanitizeGraphvizText(root);
   return new XMLSerializer().serializeToString(root);
 }
