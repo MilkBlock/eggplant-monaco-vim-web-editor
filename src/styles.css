@@ -329,6 +329,12 @@ select {
   padding: 18px;
 }
 
+.graph-zoom-canvas {
+  transform-origin: top left;
+  width: max-content;
+  min-width: 100%;
+}
+
 .graph-zoom-content svg {
   display: block;
   width: max-content;

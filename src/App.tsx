@@ -1,4 +1,12 @@
-import { startTransition, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
+import {
+  startTransition,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type WheelEvent as ReactWheelEvent,
+} from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
 import { initVimMode } from 'monaco-vim';
 import {
@@ -509,6 +517,7 @@ export default function App() {
   const [vimEnabled, setVimEnabled] = useState(true);
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
   const [graphZoomOpen, setGraphZoomOpen] = useState(false);
+  const [graphZoomScale, setGraphZoomScale] = useState(1);
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
   const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('rows');
@@ -527,6 +536,7 @@ export default function App() {
   const [refreshNonce, setRefreshNonce] = useState(0);
   const statusRef = useRef<HTMLDivElement | null>(null);
   const graphPreviewRef = useRef<HTMLDivElement | null>(null);
+  const graphZoomContentRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<MonacoEditorInstance | null>(null);
   const eggEditorRef = useRef<MonacoEditorInstance | null>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
@@ -1131,6 +1141,34 @@ export default function App() {
     setGraphZoomOpen(false);
   };
 
+  const handleGraphZoomWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    const container = graphZoomContentRef.current;
+    if (!container) {
+      return;
+    }
+
+    event.preventDefault();
+    const rect = container.getBoundingClientRect();
+    const offsetX = event.clientX - rect.left;
+    const offsetY = event.clientY - rect.top;
+
+    setGraphZoomScale((current) => {
+      const next = Math.min(4, Math.max(0.6, current * (event.deltaY < 0 ? 1.12 : 1 / 1.12)));
+      if (next === current) {
+        return current;
+      }
+
+      const contentX = (container.scrollLeft + offsetX) / current;
+      const contentY = (container.scrollTop + offsetY) / current;
+      requestAnimationFrame(() => {
+        container.scrollLeft = contentX * next - offsetX;
+        container.scrollTop = contentY * next - offsetY;
+      });
+
+      return next;
+    });
+  };
+
   const handleRefresh = () => {
     setClipboardStatus('Refreshing extractor, typst, and graph layout...');
     setGraphContextMenu(closedGraphContextMenu);
@@ -1263,6 +1301,12 @@ export default function App() {
       window.removeEventListener('keydown', handleEscape);
     };
   }, [focusMode, graphZoomOpen]);
+
+  useEffect(() => {
+    if (graphZoomOpen) {
+      setGraphZoomScale(1);
+    }
+  }, [graphZoomOpen]);
 
   useEffect(() => {
     if (!transpilerEnabled) {
@@ -1956,16 +2000,29 @@ export default function App() {
           >
             <div className="graph-zoom-header">
               <strong>Graph Snapshot</strong>
-              <button className="action-button" onClick={() => setGraphZoomOpen(false)} type="button">
-                Close
-              </button>
+              <div className="button-row">
+                <span className="status-pill">Zoom {Math.round(graphZoomScale * 100)}%</span>
+                <button className="action-button" onClick={() => setGraphZoomScale(1)} type="button">
+                  Reset Zoom
+                </button>
+                <button className="action-button" onClick={() => setGraphZoomOpen(false)} type="button">
+                  Close
+                </button>
+              </div>
             </div>
             <div
               className="graph-zoom-content"
+              ref={graphZoomContentRef}
               onClick={handleGraphClick}
               onDoubleClick={handleGraphZoomDoubleClick}
-              dangerouslySetInnerHTML={{ __html: graphSvg }}
-            />
+              onWheel={handleGraphZoomWheel}
+            >
+              <div
+                className="graph-zoom-canvas"
+                style={{ transform: `scale(${graphZoomScale})` }}
+                dangerouslySetInnerHTML={{ __html: graphSvg }}
+              />
+            </div>
           </div>
         </div>
       ) : null}
