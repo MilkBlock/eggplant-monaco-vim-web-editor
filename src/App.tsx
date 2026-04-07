@@ -2082,6 +2082,10 @@ export default function App() {
                         />
                       </label>
                       <p className="subtle">{overlay.status}</p>
+                      <div className="snapshot-typst-source">
+                        <strong>TreeAdditive Typst</strong>
+                        <pre>{overlay.source}</pre>
+                      </div>
                       <div style={{ zoom: overlay.scale }}>
                         {renderSelectedTypstPreview(overlay.rendering, overlay.source, overlay.status)}
                         {snapshotModel?.typstBasicFields[overlay.nodeId]?.length ? (
