@@ -636,6 +636,7 @@ export default function App() {
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
   const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('typst');
+  const [snapshotTypstShowMembers, setSnapshotTypstShowMembers] = useState(false);
   const [snapshotTypstOverlays, setSnapshotTypstOverlays] = useState<SnapshotTypstOverlay[]>([]);
   const [selectedSnapshotDemoId, setSelectedSnapshotDemoId] = useState(snapshotDemos[0]?.id ?? '');
   const [snapshotInput, setSnapshotInput] = useState('');
@@ -837,8 +838,8 @@ export default function App() {
       try {
         const dot = snapshotGraphMode === 'eqclass' && snapshotModel.eqClassDot
           ? snapshotModel.eqClassDot
-          : snapshotGraphMode === 'typst' && snapshotModel.typstDot
-            ? snapshotModel.typstDot
+          : snapshotGraphMode === 'typst' && (snapshotTypstShowMembers ? snapshotModel.typstMemberDot : snapshotModel.typstDot)
+            ? (snapshotTypstShowMembers ? snapshotModel.typstMemberDot : snapshotModel.typstDot)!
             : snapshotModel.rowsDot;
         const svg = await renderDotToSvg(
           dot,
@@ -868,7 +869,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [snapshotGraphMode, snapshotMode, snapshotModel, snapshotTypstOverlays]);
+  }, [snapshotGraphMode, snapshotMode, snapshotModel, snapshotTypstOverlays, snapshotTypstShowMembers]);
 
   useEffect(() => {
     if (!snapshotMode || snapshotGraphMode !== 'typst' || !snapshotModel) {
@@ -1987,6 +1988,15 @@ export default function App() {
                       >
                         Typst Graph
                       </button>
+                      {snapshotGraphMode === 'typst' ? (
+                        <button
+                          className={snapshotTypstShowMembers ? 'action-button active' : 'action-button'}
+                          onClick={() => setSnapshotTypstShowMembers((value) => !value)}
+                          type="button"
+                        >
+                          {snapshotTypstShowMembers ? 'Hide Member Nodes' : 'Show Member Nodes'}
+                        </button>
+                      ) : null}
                     </div>
                   ) : (
                     <div className="button-row">

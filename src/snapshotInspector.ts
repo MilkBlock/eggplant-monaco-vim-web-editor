@@ -142,6 +142,7 @@ export type SnapshotInspectorModel = {
   rowsDot: string;
   eqClassDot: string | null;
   typstDot: string | null;
+  typstMemberDot: string | null;
   typstSources: Record<string, string>;
   typstBasicFields: Record<string, string[]>;
   classNodes: SnapshotClassNode[];
@@ -195,6 +196,7 @@ function opName(opId: number, opsById: Map<number, PersistedSnapshotFunctionDecl
 type TypstRenderedTerm = {
   text: string;
   precedence: number;
+  cost: number;
 };
 
 function placeholderOrder(template: string): string[] {
@@ -223,6 +225,16 @@ function renderTypstTemplate(template: string, args: TypstRenderedTerm[], preced
     rendered = rendered.replace(new RegExp(`\\{${placeholder}\\}`, 'g'), text);
   });
   return rendered;
+}
+
+function compareTypstChoices(left: TypstRenderedTerm, right: TypstRenderedTerm): number {
+  if (left.cost !== right.cost) {
+    return left.cost - right.cost;
+  }
+  if (left.text.length !== right.text.length) {
+    return left.text.length - right.text.length;
+  }
+  return left.text.localeCompare(right.text);
 }
 
 function unionFind(values: string[]): Map<string, string> {
@@ -412,6 +424,24 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
     ] as const),
   );
 
+  const memberBasicFields = (member: PersistedSnapshotEqClassMemberRow | undefined): string[] => {
+    if (!member) {
+      return [];
+    }
+    const metadata = typstMetadataByOpId.get(member.op_id);
+    const placeholderNames = metadata?.typstTemplate ? placeholderOrder(metadata.typstTemplate) : [];
+    return member.inputs
+      .map((input, inputIndex) => {
+        if (input.kind !== 'lit') {
+          return null;
+        }
+        const fieldName = placeholderNames[inputIndex];
+        return fieldName ? `${fieldName}: ${input.value.value}` : input.value.value;
+      })
+      .filter((entry): entry is string => entry !== null);
+  };
+
+  const extractChoiceCache = new Map<string, TypstRenderedTerm>();
   const renderValueTypst = (
     value: PersistedSnapshotValue,
     visiting: Set<string>,
@@ -420,40 +450,61 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
       return {
         text: value.value.value,
         precedence: Number.MAX_SAFE_INTEGER,
+        cost: 1,
       };
+    }
+
+    const cached = extractChoiceCache.get(value.logical_id);
+    if (cached) {
+      return cached;
     }
 
     const eqClass = eqClassesByLogicalId.get(value.logical_id);
     if (!eqClass || eqClass.members.length === 0) {
-      return {
+      const fallback = {
         text: debugByLogicalId.get(value.logical_id) ?? value.logical_id,
         precedence: Number.MAX_SAFE_INTEGER,
+        cost: 1,
       };
+      extractChoiceCache.set(value.logical_id, fallback);
+      return fallback;
     }
     if (visiting.has(value.logical_id)) {
       return {
         text: eqClass.debug_value ?? value.logical_id,
         precedence: Number.MAX_SAFE_INTEGER,
+        cost: Number.MAX_SAFE_INTEGER / 4,
       };
     }
 
     visiting.add(value.logical_id);
-    const member = eqClass.members[0];
-    const metadata = typstMetadataByOpId.get(member.op_id);
-    const childTerms = member.inputs.map((input) => renderValueTypst(input, visiting));
-    visiting.delete(value.logical_id);
-
-    if (metadata?.typstTemplate) {
-      return {
-        text: renderTypstTemplate(metadata.typstTemplate, childTerms, metadata.precedence),
-        precedence: metadata.precedence,
-      };
+    let bestChoice: TypstRenderedTerm | null = null;
+    for (const member of eqClass.members) {
+      const metadata = typstMetadataByOpId.get(member.op_id);
+      const childTerms = member.inputs.map((input) => renderValueTypst(input, visiting));
+      const choice = metadata?.typstTemplate
+        ? {
+            text: renderTypstTemplate(metadata.typstTemplate, childTerms, metadata.precedence),
+            precedence: metadata.precedence,
+            cost: 1 + childTerms.reduce((sum, term) => sum + term.cost, 0),
+          }
+        : {
+            text: `${metadata?.name ?? `op#${member.op_id}`}(${childTerms.map((term) => term.text).join(', ')})`,
+            precedence: metadata?.precedence ?? Number.MAX_SAFE_INTEGER,
+            cost: 1 + childTerms.reduce((sum, term) => sum + term.cost, 0),
+          };
+      if (!bestChoice || compareTypstChoices(choice, bestChoice) < 0) {
+        bestChoice = choice;
+      }
     }
-
-    return {
-      text: `${metadata?.name ?? `op#${member.op_id}`}(${childTerms.map((term) => term.text).join(', ')})`,
-      precedence: metadata?.precedence ?? Number.MAX_SAFE_INTEGER,
+    visiting.delete(value.logical_id);
+    const resolved = bestChoice ?? {
+      text: eqClass.debug_value ?? value.logical_id,
+      precedence: Number.MAX_SAFE_INTEGER,
+      cost: 1,
     };
+    extractChoiceCache.set(value.logical_id, resolved);
+    return resolved;
   };
   const eqClassLines = eqClassPayload
     ? [
@@ -516,17 +567,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
       );
       typstSources[classId] = formula.text;
       const member = eqClass.members[0];
-      const metadata = member ? typstMetadataByOpId.get(member.op_id) : null;
-      const placeholderNames = metadata?.typstTemplate ? placeholderOrder(metadata.typstTemplate) : [];
-      typstBasicFields[classId] = (member?.inputs ?? [])
-        .map((input, inputIndex) => {
-          if (input.kind !== 'lit') {
-            return null;
-          }
-          const fieldName = placeholderNames[inputIndex];
-          return fieldName ? `${fieldName}: ${input.value.value}` : input.value.value;
-        })
-        .filter((entry): entry is string => entry !== null);
+      typstBasicFields[classId] = memberBasicFields(member);
       const fallbackLabel = opName(eqClass.members[0]?.op_id ?? -1, opsById);
       typstLines.push(
         `  ${quote(classId)} [label=${buildTypstNodeHtmlLabel(fallbackLabel, typstBasicFields[classId])}, fillcolor="#fff7df", color="#c26d00"];`,
@@ -548,11 +589,64 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
     typstLines.push('}');
   }
 
+  const typstMemberLines = eqClassPayload
+    ? [
+        'digraph PersistedSnapshotTypstMembers {',
+        '  rankdir=LR;',
+        '  graph [pad=0.3, nodesep=0.45, ranksep=0.7, compound=true];',
+        '  node [shape=box, style="rounded,filled", width=1.35, height=1.35, margin="0.10,0.08", fillcolor="#f6f2e8", color="#6b5b3e", fontname="Helvetica"];',
+        '  edge [color="#7a7468"];',
+      ]
+    : null;
+
+  if (eqClassPayload && typstMemberLines) {
+    eqClassPayload.classes.forEach((eqClass, classIndex) => {
+      const classId = `typst-class:${classIndex}`;
+      typstMemberLines.push(`  subgraph cluster_typst_${classIndex} {`);
+      typstMemberLines.push(`    label=${quote(`eqclass ${classIndex}`)};`);
+      typstMemberLines.push('    color="#d6b98a";');
+      typstMemberLines.push('    style="rounded,dashed";');
+      typstMemberLines.push(
+        `    ${quote(classId)} [label=${buildTypstNodeHtmlLabel(opName(eqClass.members[0]?.op_id ?? -1, opsById), typstBasicFields[classId] ?? [])}, fillcolor="#fff7df", color="#c26d00"];`,
+      );
+      eqClass.members.forEach((member, memberIndex) => {
+        const memberId = `typst-member:${classIndex}:${memberIndex}`;
+        typstSources[memberId] = typstSources[classId];
+        typstBasicFields[memberId] = memberBasicFields(member);
+        typstMemberLines.push(
+          `    ${quote(memberId)} [label=${buildTypstNodeHtmlLabel(opName(member.op_id, opsById), typstBasicFields[memberId])}, fillcolor="#fffaf0", color="#b98b42"];`,
+        );
+        typstMemberLines.push(`    ${quote(classId)} -> ${quote(memberId)} [style=dashed, label="member"];`);
+      });
+      typstMemberLines.push('  }');
+    });
+
+    eqClassPayload.classes.forEach((eqClass, classIndex) => {
+      const member = eqClass.members[0];
+      if (!member) {
+        return;
+      }
+      member.inputs.forEach((input, inputIndex) => {
+        if (input.kind !== 'ref') {
+          return;
+        }
+        const sourceClassIndex = eqClassPayload.classes.findIndex((candidate) => candidate.logical_id === input.logical_id);
+        if (sourceClassIndex >= 0) {
+          typstMemberLines.push(
+            `  ${quote(`typst-class:${sourceClassIndex}`)} -> ${quote(`typst-class:${classIndex}`)} [label=${quote(String(inputIndex))}];`,
+          );
+        }
+      });
+    });
+    typstMemberLines.push('}');
+  }
+
   return {
     snapshot,
     rowsDot: lines.join('\n'),
     eqClassDot: eqClassLines ? eqClassLines.join('\n') : null,
     typstDot: typstLines ? typstLines.join('\n') : null,
+    typstMemberDot: typstMemberLines ? typstMemberLines.join('\n') : null,
     typstSources,
     typstBasicFields,
     classNodes,
