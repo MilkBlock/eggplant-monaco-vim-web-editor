@@ -505,8 +505,8 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
           if (input.kind !== 'lit') {
             return null;
           }
-          const fieldName = placeholderNames[inputIndex] ?? `field${inputIndex}`;
-          return `${fieldName}: ${input.value.value}`;
+          const fieldName = placeholderNames[inputIndex];
+          return fieldName ? `${fieldName}: ${input.value.value}` : input.value.value;
         })
         .filter((entry): entry is string => entry !== null);
       const fallbackLabel = opName(eqClass.members[0]?.op_id ?? -1, opsById);
