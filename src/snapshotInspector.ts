@@ -480,7 +480,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
         'digraph PersistedSnapshotTypst {',
         '  rankdir=LR;',
         '  graph [pad=0.3, nodesep=0.45, ranksep=0.7];',
-        '  node [shape=box, style="rounded,filled", fixedsize=true, width=1.35, height=1.35, margin=0, fillcolor="#f6f2e8", color="#6b5b3e", fontname="Helvetica"];',
+        '  node [shape=box, style="rounded,filled", width=1.35, height=1.35, margin="0.10,0.08", fillcolor="#f6f2e8", color="#6b5b3e", fontname="Helvetica"];',
         '  edge [color="#7a7468"];',
       ]
     : null;
