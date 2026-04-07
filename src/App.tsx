@@ -45,16 +45,10 @@ import fibonacciFuncSource from './samples/fibonacci_func.rs?raw';
 import relationSource from './samples/relation.rs?raw';
 import mathMicrobenchmarkSource from './samples/math_microbenchmark.rs?raw';
 import complexSource from './samples/complex.rs?raw';
-import fibExampleSnapshotSource from './snapshot-demos/fib_example.json?raw';
-import relationExampleSnapshotSource from './snapshot-demos/relation_example.json?raw';
-import gblDataExampleSnapshotSource from './snapshot-demos/gbl_data_example.json?raw';
-import constantPropExampleSnapshotSource from './snapshot-demos/constant_prop_example.json?raw';
 import mathMicrobenchmarkSnapshotSource from './snapshot-demos/math_microbenchmark_v2.json?raw';
 import v2EqclassCommonPathSnapshotSource from './snapshot-demos/v2_eqclass_common_path.json?raw';
 import v2EqclassUnionSnapshotSource from './snapshot-demos/v2_eqclass_union.json?raw';
 import typstMetadataExampleSnapshotSource from './snapshot-demos/typst_metadata_example.json?raw';
-import commonPathBinarySnapshotUrl from './snapshot-demos/common_path.egbin?url';
-import plainSourceBinarySnapshotUrl from './snapshot-demos/plain_source_non_goal.egbin?url';
 import v2EqclassCommonPathBinarySnapshotUrl from './snapshot-demos/v2_eqclass_common_path.egbin?url';
 import v2EqclassUnionBinarySnapshotUrl from './snapshot-demos/v2_eqclass_union.egbin?url';
 import { extractPatternIr } from './webExtractor';
@@ -151,34 +145,6 @@ const snapshotDemos: SnapshotDemo[] = [
     source: mathMicrobenchmarkSnapshotSource,
   },
   {
-    id: 'fib_example',
-    label: 'fib_example.json',
-    description: 'Snapshot derived from the fib example: function-table rows plus rule-driven growth.',
-    format: 'json',
-    source: fibExampleSnapshotSource,
-  },
-  {
-    id: 'relation_example',
-    label: 'relation_example.json',
-    description: 'Snapshot derived from the relation example: edge/path expansion with mark rows.',
-    format: 'json',
-    source: relationExampleSnapshotSource,
-  },
-  {
-    id: 'gbl_data_example',
-    label: 'gbl_data_example.json',
-    description: 'Snapshot derived from the gbl_data example family: arithmetic constructor graph.',
-    format: 'json',
-    source: gblDataExampleSnapshotSource,
-  },
-  {
-    id: 'constant_prop_example',
-    label: 'constant_prop_example.json',
-    description: 'Snapshot derived from the constant_prop example: arithmetic rewrite rows over constants.',
-    format: 'json',
-    source: constantPropExampleSnapshotSource,
-  },
-  {
     id: 'binary_v2_eqclass_common_path',
     label: 'v2_eqclass_common_path.egbin',
     description: 'Binary v2 snapshot fixture using the new MessagePack envelope format.',
@@ -191,20 +157,6 @@ const snapshotDemos: SnapshotDemo[] = [
     description: 'Binary v2 snapshot fixture focused on union/class grouping behavior.',
     format: 'binary',
     url: v2EqclassUnionBinarySnapshotUrl,
-  },
-  {
-    id: 'binary_common_path',
-    label: 'common_path.egbin',
-    description: 'Binary v1 snapshot fixture for the common-path baseline.',
-    format: 'binary',
-    url: commonPathBinarySnapshotUrl,
-  },
-  {
-    id: 'binary_plain_source_non_goal',
-    label: 'plain_source_non_goal.egbin',
-    description: 'Binary v1 snapshot fixture without eq-class payload, useful for non-goal source coverage.',
-    format: 'binary',
-    url: plainSourceBinarySnapshotUrl,
   },
 ];
 
