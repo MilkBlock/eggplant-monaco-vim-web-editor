@@ -421,6 +421,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
         name: decl.name,
         typstTemplate: decl.metadata?.typst_template ?? null,
         precedence: decl.metadata?.precedence ?? Number.MAX_SAFE_INTEGER,
+        cost: decl.cost ?? 1,
       },
     ] as const),
   );
@@ -483,16 +484,17 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
     for (const member of eqClass.members) {
       const metadata = typstMetadataByOpId.get(member.op_id);
       const childTerms = member.inputs.map((input) => renderValueTypst(input, visiting));
+      const headCost = metadata?.cost ?? 1;
       const choice = metadata?.typstTemplate
         ? {
             text: renderTypstTemplate(metadata.typstTemplate, childTerms, metadata.precedence),
             precedence: metadata.precedence,
-            cost: 1 + childTerms.reduce((sum, term) => sum + term.cost, 0),
+            cost: headCost + childTerms.reduce((sum, term) => sum + term.cost, 0),
           }
         : {
             text: `${metadata?.name ?? `op#${member.op_id}`}(${childTerms.map((term) => term.text).join(', ')})`,
             precedence: metadata?.precedence ?? Number.MAX_SAFE_INTEGER,
-            cost: 1 + childTerms.reduce((sum, term) => sum + term.cost, 0),
+            cost: headCost + childTerms.reduce((sum, term) => sum + term.cost, 0),
           };
       if (!bestChoice || compareTypstChoices(choice, bestChoice) < 0) {
         bestChoice = choice;
