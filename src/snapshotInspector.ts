@@ -143,6 +143,7 @@ export type SnapshotInspectorModel = {
   eqClassDot: string | null;
   typstDot: string | null;
   typstSources: Record<string, string>;
+  typstBasicFields: Record<string, string[]>;
   classNodes: SnapshotClassNode[];
   opNodes: SnapshotOpNode[];
   eqClasses: PersistedSnapshotEqClass[];
@@ -473,6 +474,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
   }
 
   const typstSources: Record<string, string> = {};
+  const typstBasicFields: Record<string, string[]> = {};
   const typstLines = eqClassPayload
     ? [
         'digraph PersistedSnapshotTypst {',
@@ -495,12 +497,23 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
         new Set(),
       );
       typstSources[classId] = formula.text;
+      const member = eqClass.members[0];
+      const metadata = member ? typstMetadataByOpId.get(member.op_id) : null;
+      const placeholderNames = metadata?.typstTemplate ? placeholderOrder(metadata.typstTemplate) : [];
+      typstBasicFields[classId] = (member?.inputs ?? [])
+        .map((input, inputIndex) => {
+          if (input.kind !== 'lit') {
+            return null;
+          }
+          const fieldName = placeholderNames[inputIndex] ?? `field${inputIndex}`;
+          return `${fieldName}: ${input.value.value}`;
+        })
+        .filter((entry): entry is string => entry !== null);
       const fallbackLabel = opName(eqClass.members[0]?.op_id ?? -1, opsById);
       typstLines.push(
         `  ${quote(classId)} [label=${quote(fallbackLabel)}, fillcolor="#fff7df", color="#c26d00"];`,
       );
 
-      const member = eqClass.members[0];
       if (!member) {
         return;
       }
@@ -523,6 +536,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
     eqClassDot: eqClassLines ? eqClassLines.join('\n') : null,
     typstDot: typstLines ? typstLines.join('\n') : null,
     typstSources,
+    typstBasicFields,
     classNodes,
     opNodes,
     eqClasses: eqClassPayload?.classes ?? [],

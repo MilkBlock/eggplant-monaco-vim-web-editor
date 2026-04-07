@@ -368,6 +368,18 @@ select {
   height: auto;
 }
 
+.snapshot-typst-basic-fields {
+  margin-top: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.snapshot-typst-basic-field {
+  font-family: "Iosevka", "Iosevka Term", "SF Mono", "Menlo", monospace;
+  font-size: 13px;
+  color: #0f1720;
+}
+
 .graph-zoom-modal {
   position: fixed;
   inset: 0;

@@ -2122,6 +2122,15 @@ export default function App() {
                       <p className="subtle">{overlay.status}</p>
                       <div style={{ zoom: overlay.scale }}>
                         {renderSelectedTypstPreview(overlay.rendering, overlay.source, overlay.status)}
+                        {snapshotModel?.typstBasicFields[overlay.nodeId]?.length ? (
+                          <div className="snapshot-typst-basic-fields">
+                            {snapshotModel.typstBasicFields[overlay.nodeId].map((field) => (
+                              <div className="snapshot-typst-basic-field" key={`${overlay.id}:${field}`}>
+                                {field}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   ))
