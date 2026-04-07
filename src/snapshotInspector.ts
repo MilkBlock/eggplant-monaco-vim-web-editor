@@ -606,42 +606,52 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
 
   if (eqClassPayload && typstMemberLines) {
     eqClassPayload.classes.forEach((eqClass, classIndex) => {
-      const classId = `typst-class:${classIndex}`;
+      const anchorId = `typst-anchor:${classIndex}`;
       typstMemberLines.push(`  subgraph cluster_typst_${classIndex} {`);
       typstMemberLines.push(`    label=${quote(`eqclass ${classIndex}`)};`);
       typstMemberLines.push('    color="#d6b98a";');
       typstMemberLines.push('    style="rounded,dashed";');
-      typstMemberLines.push(
-        `    ${quote(classId)} [label=${buildTypstNodeHtmlLabel(opName(eqClass.members[0]?.op_id ?? -1, opsById), typstBasicFields[classId] ?? [])}, fillcolor="#fff7df", color="#c26d00"];`,
-      );
+      typstMemberLines.push(`    ${quote(anchorId)} [label="", shape=point, width=0.01, height=0.01, style=invis];`);
       eqClass.members.forEach((member, memberIndex) => {
         const memberId = `typst-member:${classIndex}:${memberIndex}`;
-        typstSources[memberId] = typstSources[classId];
-        typstCosts[memberId] = typstCosts[classId];
+        const metadata = typstMetadataByOpId.get(member.op_id);
+        const childTerms = member.inputs.map((input) => renderValueTypst(input, new Set([eqClass.logical_id])));
+        const headCost = metadata?.cost ?? 1;
+        const memberFormula = metadata?.typstTemplate
+          ? {
+              text: renderTypstTemplate(metadata.typstTemplate, childTerms, metadata.precedence),
+              precedence: metadata.precedence,
+              cost: headCost + childTerms.reduce((sum, term) => sum + term.cost, 0),
+            }
+          : {
+              text: `${metadata?.name ?? `op#${member.op_id}`}(${childTerms.map((term) => term.text).join(', ')})`,
+              precedence: metadata?.precedence ?? Number.MAX_SAFE_INTEGER,
+              cost: headCost + childTerms.reduce((sum, term) => sum + term.cost, 0),
+            };
+        typstSources[memberId] = memberFormula.text;
+        typstCosts[memberId] = memberFormula.cost;
         typstBasicFields[memberId] = memberBasicFields(member);
         typstMemberLines.push(
           `    ${quote(memberId)} [label=${buildTypstNodeHtmlLabel(opName(member.op_id, opsById), typstBasicFields[memberId])}, fillcolor="#fffaf0", color="#b98b42"];`,
         );
-        typstMemberLines.push(`    ${quote(classId)} -> ${quote(memberId)} [style=dashed, label="member"];`);
       });
       typstMemberLines.push('  }');
     });
 
     eqClassPayload.classes.forEach((eqClass, classIndex) => {
-      const member = eqClass.members[0];
-      if (!member) {
-        return;
-      }
-      member.inputs.forEach((input, inputIndex) => {
-        if (input.kind !== 'ref') {
-          return;
-        }
-        const sourceClassIndex = eqClassPayload.classes.findIndex((candidate) => candidate.logical_id === input.logical_id);
-        if (sourceClassIndex >= 0) {
-          typstMemberLines.push(
-            `  ${quote(`typst-class:${sourceClassIndex}`)} -> ${quote(`typst-class:${classIndex}`)} [label=${quote(String(inputIndex))}];`,
-          );
-        }
+      eqClass.members.forEach((member, memberIndex) => {
+        const memberId = `typst-member:${classIndex}:${memberIndex}`;
+        member.inputs.forEach((input, inputIndex) => {
+          if (input.kind !== 'ref') {
+            return;
+          }
+          const sourceClassIndex = eqClassPayload.classes.findIndex((candidate) => candidate.logical_id === input.logical_id);
+          if (sourceClassIndex >= 0) {
+            typstMemberLines.push(
+              `  ${quote(`typst-anchor:${sourceClassIndex}`)} -> ${quote(memberId)} [ltail=${quote(`cluster_typst_${sourceClassIndex}`)}, label=${quote(String(inputIndex))}];`,
+            );
+          }
+        });
       });
     });
     typstMemberLines.push('}');
