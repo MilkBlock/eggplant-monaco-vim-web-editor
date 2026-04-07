@@ -510,8 +510,11 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
         })
         .filter((entry): entry is string => entry !== null);
       const fallbackLabel = opName(eqClass.members[0]?.op_id ?? -1, opsById);
+      const basicFieldSuffix = typstBasicFields[classId].length
+        ? `\\n${typstBasicFields[classId].join('\\n')}`
+        : '';
       typstLines.push(
-        `  ${quote(classId)} [label=${quote(fallbackLabel)}, fillcolor="#fff7df", color="#c26d00"];`,
+        `  ${quote(classId)} [label=${quote(`${fallbackLabel}${basicFieldSuffix}`)}, fillcolor="#fff7df", color="#c26d00"];`,
       );
 
       if (!member) {
