@@ -2080,6 +2080,11 @@ export default function App() {
                       style={{ left: `${overlay.x}px`, top: `${overlay.y}px`, borderColor: overlay.color }}
                     >
                       <div
+                        className="snapshot-typst-overlay-bar"
+                        onMouseDown={(event) => handleSnapshotTypstOverlayDragStart(overlay.id, overlay.x, overlay.y, event)}
+                        style={{ background: overlay.color }}
+                      />
+                      <div
                         className="snapshot-typst-overlay-header"
                         onMouseDown={(event) => handleSnapshotTypstOverlayDragStart(overlay.id, overlay.x, overlay.y, event)}
                       >

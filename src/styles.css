@@ -315,9 +315,16 @@ select {
   overflow: auto;
   border-radius: 18px;
   background: rgba(9, 13, 20, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-  padding: 14px 16px 16px;
+  padding: 0 16px 16px;
+}
+
+.snapshot-typst-overlay-bar {
+  height: 12px;
+  width: 100%;
+  margin: 0 -16px 12px;
+  cursor: move;
 }
 
 .snapshot-typst-overlay-header {
