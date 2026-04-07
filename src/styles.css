@@ -361,6 +361,13 @@ select {
   color: rgba(244, 241, 232, 0.78);
 }
 
+.snapshot-typst-source small {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: rgba(244, 241, 232, 0.62);
+}
+
 .snapshot-typst-source pre {
   margin: 0;
   white-space: pre-wrap;

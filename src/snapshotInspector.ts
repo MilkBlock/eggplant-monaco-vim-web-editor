@@ -144,6 +144,7 @@ export type SnapshotInspectorModel = {
   typstDot: string | null;
   typstMemberDot: string | null;
   typstSources: Record<string, string>;
+  typstCosts: Record<string, number>;
   typstBasicFields: Record<string, string[]>;
   classNodes: SnapshotClassNode[];
   opNodes: SnapshotOpNode[];
@@ -543,6 +544,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
   }
 
   const typstSources: Record<string, string> = {};
+  const typstCosts: Record<string, number> = {};
   const typstBasicFields: Record<string, string[]> = {};
   const typstLines = eqClassPayload
     ? [
@@ -566,6 +568,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
         new Set(),
       );
       typstSources[classId] = formula.text;
+      typstCosts[classId] = formula.cost;
       const member = eqClass.members[0];
       typstBasicFields[classId] = memberBasicFields(member);
       const fallbackLabel = opName(eqClass.members[0]?.op_id ?? -1, opsById);
@@ -612,6 +615,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
       eqClass.members.forEach((member, memberIndex) => {
         const memberId = `typst-member:${classIndex}:${memberIndex}`;
         typstSources[memberId] = typstSources[classId];
+        typstCosts[memberId] = typstCosts[classId];
         typstBasicFields[memberId] = memberBasicFields(member);
         typstMemberLines.push(
           `    ${quote(memberId)} [label=${buildTypstNodeHtmlLabel(opName(member.op_id, opsById), typstBasicFields[memberId])}, fillcolor="#fffaf0", color="#b98b42"];`,
@@ -648,6 +652,7 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
     typstDot: typstLines ? typstLines.join('\n') : null,
     typstMemberDot: typstMemberLines ? typstMemberLines.join('\n') : null,
     typstSources,
+    typstCosts,
     typstBasicFields,
     classNodes,
     opNodes,

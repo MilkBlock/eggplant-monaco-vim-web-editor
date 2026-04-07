@@ -185,6 +185,7 @@ type SnapshotTypstOverlay = {
   id: string;
   nodeId: string;
   source: string;
+  cost: number | null;
   status: string;
   rendering: RenderedTypstSnippet | null;
   x: number;
@@ -1343,6 +1344,7 @@ export default function App() {
                 id: overlayId,
                 nodeId: targetId,
                 source,
+                cost: snapshotModel?.typstCosts[targetId] ?? null,
                 status: `Rendering typst preview for ${targetId}...`,
                 rendering: null,
                 x: event.clientX,
@@ -2084,6 +2086,7 @@ export default function App() {
                       <p className="subtle">{overlay.status}</p>
                       <div className="snapshot-typst-source">
                         <strong>TreeAdditive Typst</strong>
+                        {overlay.cost !== null ? <small>Cost: {overlay.cost}</small> : null}
                         <pre>{overlay.source}</pre>
                       </div>
                       <div style={{ zoom: overlay.scale }}>
