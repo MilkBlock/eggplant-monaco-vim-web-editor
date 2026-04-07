@@ -163,6 +163,24 @@ function quote(value: string): string {
   return JSON.stringify(value);
 }
 
+function htmlEscape(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+function buildTypstNodeHtmlLabel(title: string, basicFields: string[]): string {
+  const rows = [
+    `<TR><TD><FONT POINT-SIZE="14"><B>${htmlEscape(title)}</B></FONT></TD></TR>`,
+    ...basicFields.map(
+      (field) => `<TR><TD><FONT POINT-SIZE="10">${htmlEscape(field)}</FONT></TD></TR>`,
+    ),
+  ].join('');
+  return `<\n<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="1" CELLSPACING="0">${rows}</TABLE>\n>`;
+}
+
 function valueKey(value: PersistedSnapshotValue): string {
   if (value.kind === 'ref') {
     return `ref:${value.sort_id}:${value.logical_id}`;
@@ -510,11 +528,8 @@ export function buildSnapshotInspectorModel(snapshot: PersistedSnapshot): Snapsh
         })
         .filter((entry): entry is string => entry !== null);
       const fallbackLabel = opName(eqClass.members[0]?.op_id ?? -1, opsById);
-      const basicFieldSuffix = typstBasicFields[classId].length
-        ? `\\n${typstBasicFields[classId].join('\\n')}`
-        : '';
       typstLines.push(
-        `  ${quote(classId)} [label=${quote(`${fallbackLabel}${basicFieldSuffix}`)}, fillcolor="#fff7df", color="#c26d00"];`,
+        `  ${quote(classId)} [label=${buildTypstNodeHtmlLabel(fallbackLabel, typstBasicFields[classId])}, fillcolor="#fff7df", color="#c26d00"];`,
       );
 
       if (!member) {
