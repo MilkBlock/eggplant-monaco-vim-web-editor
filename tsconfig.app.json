@@ -20,5 +20,6 @@
       "@eggplant-vscode/*": ["vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }

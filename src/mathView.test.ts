@@ -1,0 +1,126 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import type { PatternIr } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/ir';
+import { buildMathViewModel } from './mathView';
+
+test('buildMathViewModel organizes diff_mul into premises, derivations, and rewrite conclusion', () => {
+  const ir: PatternIr = {
+    scope: {
+      kind: 'add_rule_call',
+      text_range: { start: 0, end: 220 },
+      pattern_range: { start: 20, end: 120 },
+      action_range: { start: 121, end: 220 },
+    },
+    nodes: [
+      { id: 'x', kind: 'query_leaf', dsl_type: 'Math', label: 'x: Math', range: { start: 20, end: 21 }, inputs: [] },
+      { id: 'a', kind: 'query_leaf', dsl_type: 'Math', label: 'a: Math', range: { start: 22, end: 23 }, inputs: [] },
+      { id: 'b', kind: 'query_leaf', dsl_type: 'Math', label: 'b: Math', range: { start: 24, end: 25 }, inputs: [] },
+      { id: 'mul', kind: 'query', dsl_type: 'MMul', label: 'mul: MMul', range: { start: 26, end: 38 }, inputs: ['a', 'b'] },
+      { id: 'diff', kind: 'query', dsl_type: 'MDiff', label: 'diff: MDiff', range: { start: 39, end: 52 }, inputs: ['x', 'mul'] },
+    ],
+    edges: [
+      { from: 'mul', to: 'a', kind: 'operand', index: 0 },
+      { from: 'mul', to: 'b', kind: 'operand', index: 1 },
+      { from: 'diff', to: 'x', kind: 'operand', index: 0 },
+      { from: 'diff', to: 'mul', kind: 'operand', index: 1 },
+    ],
+    roots: ['x', 'a', 'b', 'diff'],
+    constraints: [
+      {
+        id: 'constraint_0',
+        source_text: 'guard(a, b)',
+        resolved_text: 'guard(a, b)',
+        referenced_vars: ['a', 'b'],
+        range: { start: 53, end: 63 },
+      },
+    ],
+    action_effects: [
+      {
+        id: 'effect_0',
+        effect_id: 'effect@130:150',
+        bound_var: 'db',
+        source_text: 'ctx.insert_m_diff(pat.x, pat.b)',
+        referenced_pat_vars: ['b', 'x'],
+        referenced_action_vars: [],
+        range: { start: 130, end: 150 },
+      },
+      {
+        id: 'effect_1',
+        effect_id: 'effect@151:171',
+        bound_var: 'da',
+        source_text: 'ctx.insert_m_diff(pat.x, pat.a)',
+        referenced_pat_vars: ['a', 'x'],
+        referenced_action_vars: [],
+        range: { start: 151, end: 171 },
+      },
+      {
+        id: 'effect_2',
+        effect_id: 'effect@172:190',
+        bound_var: 'a_db',
+        source_text: 'ctx.insert_m_mul(pat.a, db)',
+        referenced_pat_vars: ['a'],
+        referenced_action_vars: ['db'],
+        range: { start: 172, end: 190 },
+      },
+      {
+        id: 'effect_3',
+        effect_id: 'effect@191:209',
+        bound_var: 'b_da',
+        source_text: 'ctx.insert_m_mul(pat.b, da)',
+        referenced_pat_vars: ['b'],
+        referenced_action_vars: ['da'],
+        range: { start: 191, end: 209 },
+      },
+      {
+        id: 'effect_4',
+        effect_id: 'effect@210:228',
+        bound_var: 'rhs',
+        source_text: 'ctx.insert_m_add(a_db, b_da)',
+        referenced_pat_vars: [],
+        referenced_action_vars: ['a_db', 'b_da'],
+        range: { start: 210, end: 228 },
+      },
+      {
+        id: 'effect_5',
+        effect_id: 'effect@229:240',
+        bound_var: null,
+        source_text: 'ctx.union(pat.diff, rhs)',
+        referenced_pat_vars: ['diff'],
+        referenced_action_vars: ['rhs'],
+        range: { start: 229, end: 240 },
+      },
+    ],
+    seed_facts: [],
+    display_templates: [],
+    typst_templates: [
+      { variant_name: 'MMul', template: '{a} * {b}', fields: ['a', 'b'] },
+      { variant_name: 'MDiff', template: '{f}\'({x})', fields: ['x', 'f'] },
+      { variant_name: 'MAdd', template: '{a} + {b}', fields: ['a', 'b'] },
+    ],
+    precedence_templates: [
+      { variant_name: 'MMul', precedence: 60 },
+      { variant_name: 'MDiff', precedence: 90 },
+      { variant_name: 'MAdd', precedence: 50 },
+    ],
+    diagnostics: [],
+  };
+
+  const model = buildMathViewModel(ir, 'MyTxMath::add_rule("diff_mul", rs, || { ... }, |ctx, pat| { ... })');
+
+  assert.equal(model.ruleName, 'diff_mul');
+  assert.deepEqual(model.premises.map((entry) => entry.targetId), ['mul', 'diff']);
+  assert.equal(model.sideConditions.length, 1);
+  assert.match(model.sideConditions[0], /guard/);
+  assert.deepEqual(model.derivations.map((entry) => entry.targetId), [
+    'effect:effect_0',
+    'effect:effect_1',
+    'effect:effect_2',
+    'effect:effect_3',
+    'effect:effect_4',
+  ]);
+  assert.equal(model.conclusions.length, 1);
+  assert.equal(model.conclusions[0].kind, 'rewrite');
+  assert.equal(model.conclusions[0].from?.targetId, 'diff');
+  assert.equal(model.conclusions[0].to?.targetId, 'effect:effect_4');
+});

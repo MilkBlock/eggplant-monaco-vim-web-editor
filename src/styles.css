@@ -757,6 +757,60 @@ select {
   line-height: 1.5;
 }
 
+.math-view {
+  display: grid;
+  gap: 16px;
+}
+
+.math-rule-summary {
+  display: grid;
+  gap: 8px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(16, 21, 29, 0.92);
+  padding: 14px;
+}
+
+.math-rule-summary strong {
+  font-size: 18px;
+}
+
+.math-rule-summary span:last-child {
+  color: rgba(244, 241, 232, 0.74);
+  line-height: 1.5;
+}
+
+.math-section {
+  display: grid;
+  gap: 10px;
+}
+
+.math-rewrite-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(16, 21, 29, 0.92);
+  padding: 14px;
+}
+
+.math-formula-card {
+  display: grid;
+  gap: 8px;
+}
+
+.math-entry-preview {
+  display: grid;
+  gap: 8px;
+}
+
+.math-rewrite-arrow {
+  font-size: 28px;
+  color: #ffe2b4;
+}
+
 .target-meta {
   display: flex;
   align-items: center;
@@ -875,5 +929,13 @@ select {
     overflow: visible;
     min-height: auto;
     padding-right: 0;
+  }
+
+  .math-rewrite-card {
+    grid-template-columns: 1fr;
+  }
+
+  .math-rewrite-arrow {
+    justify-self: center;
   }
 }

@@ -55,6 +55,7 @@ import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
 import { decodeBinaryPersistedSnapshot } from './snapshotBinary';
+import { buildMathViewModel, type MathViewModel } from './mathView';
 import { transpileEggSource } from './webTranspiler';
 
 type SampleFile = {
@@ -72,6 +73,8 @@ type PreviewFixture = {
   ir: PatternIr;
   typstSources: Record<string, string>;
 };
+
+type PreviewWorkbenchMode = 'graph' | 'math';
 
 type SnapshotDemo = {
   id: string;
@@ -222,6 +225,26 @@ const closedGraphZoom: GraphZoomState = {
   sourceMode: 'code',
   svg: '',
 };
+
+function collectMathViewSources(model: MathViewModel): Record<string, string> {
+  const entries = [...model.premises, ...model.derivations];
+  for (const conclusion of model.conclusions) {
+    if (conclusion.from) {
+      entries.push(conclusion.from);
+    }
+    if (conclusion.to) {
+      entries.push(conclusion.to);
+    }
+    if (conclusion.entry) {
+      entries.push(conclusion.entry);
+    }
+  }
+  return Object.fromEntries(entries.map((entry) => [entry.targetId, entry.source]));
+}
+
+function previewWorkbenchModeFromSearch(search: string): PreviewWorkbenchMode {
+  return new URLSearchParams(search).get('view') === 'math' ? 'math' : 'graph';
+}
 
 function countKeywordHits(source: string) {
   return rustKeywords
@@ -600,6 +623,30 @@ function renderSelectedTypstPreview(
   );
 }
 
+function renderMathViewEntryPreview(
+  targetId: string,
+  source: string,
+  typstRenderings: Record<string, RenderedTypstSnippet>,
+  typstStatusByTargetId: Record<string, string>,
+) {
+  const rendering = typstRenderings[targetId];
+  if (!rendering) {
+    return (
+      <div className="math-entry-preview">
+        <div className="status-pill">{typstStatusByTargetId[targetId] ?? 'Typst: pending'}</div>
+        <pre className="typst-fallback-text">
+          {displayTextFallbackSource(normalizeTypstMathSource(source))}
+        </pre>
+      </div>
+    );
+  }
+  return renderSelectedTypstPreview(
+    rendering,
+    source,
+    typstStatusByTargetId[targetId] ?? 'Typst: pending',
+  );
+}
+
 function closeSnapshotTypstOverlay(
   overlays: SnapshotTypstOverlay[],
   overlayId: string,
@@ -621,6 +668,9 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(initialSample.id);
   const [source, setSource] = useState(initialSample.source);
   const [dotViewMode, setDotViewMode] = useState<DotViewMode>('combined');
+  const [previewWorkbenchMode, setPreviewWorkbenchMode] = useState<PreviewWorkbenchMode>(() =>
+    previewWorkbenchModeFromSearch(window.location.search)
+  );
   const [detailExpanded, setDetailExpanded] = useState(false);
   const [interactionState, setInteractionState] = useState<PreviewInteractionState>(
     createDefaultPreviewInteractionState(),
@@ -744,6 +794,15 @@ export default function App() {
     }),
     [activeRuleScope, dotViewMode, effectiveLabelStyle, fixtureBase, typstOverrides],
   );
+  const mathViewModel = useMemo(() => buildMathViewModel(fixture.ir, source), [fixture.ir, source]);
+  const mathViewSources = useMemo(() => collectMathViewSources(mathViewModel), [mathViewModel]);
+  const activeTypstSources = useMemo(
+    () => ({
+      ...mathViewSources,
+      ...fixture.typstSources,
+    }),
+    [fixture.typstSources, mathViewSources],
+  );
 
   const stats = useMemo(() => {
     const lines = source.split('\n');
@@ -766,8 +825,8 @@ export default function App() {
   );
   const activeState = projection.state;
   const typstStatusByTargetId = useMemo(
-    () => deriveTypstStatusByTargetId(fixture.typstSources, typstRenderings),
-    [fixture.typstSources, typstRenderings],
+    () => deriveTypstStatusByTargetId(activeTypstSources, typstRenderings),
+    [activeTypstSources, typstRenderings],
   );
   const previewDot = useMemo(
     () => patternIrToDotWithMode(fixture.ir, dotViewMode, effectiveLabelStyle, 'tree-safe', typstRenderings),
@@ -785,7 +844,7 @@ export default function App() {
         dot: previewDot,
         svg: fixture.svg,
         typstRenderings,
-        typstSources: fixture.typstSources,
+        typstSources: activeTypstSources,
         typstStatusByTargetId,
         sourceTargetIds: collectSourceTargetIds(fixture.ir, dotViewMode),
         allConstraints,
@@ -808,6 +867,7 @@ export default function App() {
       dotViewMode,
       effectiveLabelStyle,
       fixture,
+      activeTypstSources,
       previewDot,
       ruleChecks,
       typstRenderings,
@@ -819,6 +879,19 @@ export default function App() {
     () => buildConstraintCountByNodeId(visibleConstraintPool),
     [visibleConstraintPool],
   );
+
+  useEffect(() => {
+    if (snapshotMode) {
+      return;
+    }
+    const url = new URL(window.location.href);
+    if (previewWorkbenchMode === 'math') {
+      url.searchParams.set('view', 'math');
+    } else {
+      url.searchParams.delete('view');
+    }
+    window.history.replaceState({}, '', url);
+  }, [previewWorkbenchMode, snapshotMode]);
 
   useEffect(() => {
     if (snapshotMode || !snapshotModel) {
@@ -1028,7 +1101,7 @@ export default function App() {
 
     const runLayout = async () => {
       try {
-        const svg = await renderDotToSvg(previewState.dot, typstRenderings, fixture.typstSources);
+        const svg = await renderDotToSvg(previewState.dot, typstRenderings, previewState.typstSources);
         if (cancelled) {
           return;
         }
@@ -1062,7 +1135,7 @@ export default function App() {
 
   useEffect(() => {
     setDotViewMode('combined');
-    setCursorUtf16Offset(0);
+    setCursorUtf16Offset(findFirstRuleCallOffset(selectedFile.source) ?? 0);
     setActiveRuleScope(null);
     setRuleSyncStatus('Waiting for extractor...');
     setInteractionState(createDefaultPreviewInteractionState());
@@ -1176,7 +1249,7 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    const entries = Object.entries(fixture.typstSources).map(([targetId, sourceText]) => ({
+    const entries = Object.entries(activeTypstSources).map(([targetId, sourceText]) => ({
       targetId,
       source: sourceText,
     }));
@@ -1230,7 +1303,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture.typstSources, refreshNonce]);
+  }, [activeTypstSources, refreshNonce]);
 
   const handleMount: OnMount = (editor) => {
     editorRef.current = editor;
@@ -1244,8 +1317,14 @@ export default function App() {
     const model = editor.getModel();
     if (model) {
       const initialPosition = editor.getPosition();
-      if (initialPosition) {
-        setCursorUtf16Offset(model.getOffsetAt(initialPosition));
+      const initialOffset = initialPosition ? model.getOffsetAt(initialPosition) : 0;
+      const fallbackOffset = initialOffset === 0 ? findFirstRuleCallOffset(model.getValue()) : null;
+      const nextOffset = fallbackOffset ?? initialOffset;
+      setCursorUtf16Offset(nextOffset);
+      if (fallbackOffset !== null) {
+        const fallbackPosition = model.getPositionAt(fallbackOffset);
+        editor.setPosition(fallbackPosition);
+        editor.revealPositionInCenter(fallbackPosition);
       }
       cursorListenerRef.current = editor.onDidChangeCursorPosition((event) => {
         setCursorUtf16Offset(model.getOffsetAt(event.position));
@@ -1968,7 +2047,7 @@ export default function App() {
 
             <div className={focusMode ? 'preview-card graph-card focus-card' : 'preview-card graph-card'}>
               <div className="panel-header">
-                <h3>{snapshotMode ? 'Persisted EGraph' : 'Graph Snapshot'}</h3>
+                <h3>{snapshotMode ? 'Persisted EGraph' : previewWorkbenchMode === 'math' ? 'Math View Prototype' : 'Graph Snapshot'}</h3>
                 <div className="graph-toolbar">
                   {snapshotMode ? (
                     <div className="button-row">
@@ -2007,23 +2086,41 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="button-row">
-                      {dotViewModes.map((mode) => (
-                        <button
-                          key={mode}
-                          className={dotViewMode === mode ? 'action-button active' : 'action-button'}
-                          onClick={() => setDotViewMode(mode)}
-                          type="button"
-                        >
-                          {modeLabel(mode)}
-                        </button>
-                      ))}
                       <button
-                        className={detailExpanded ? 'action-button active' : 'action-button'}
-                        onClick={() => setDetailExpanded((value) => !value)}
+                        className={previewWorkbenchMode === 'graph' ? 'action-button active' : 'action-button'}
+                        onClick={() => setPreviewWorkbenchMode('graph')}
                         type="button"
                       >
-                        {detailExpanded ? 'Hide Node Detail' : 'Show Node Detail'}
+                        Graph View
                       </button>
+                      <button
+                        className={previewWorkbenchMode === 'math' ? 'action-button active' : 'action-button'}
+                        onClick={() => setPreviewWorkbenchMode('math')}
+                        type="button"
+                      >
+                        Math View
+                      </button>
+                      {previewWorkbenchMode === 'graph' ? (
+                        <>
+                          {dotViewModes.map((mode) => (
+                            <button
+                              key={mode}
+                              className={dotViewMode === mode ? 'action-button active' : 'action-button'}
+                              onClick={() => setDotViewMode(mode)}
+                              type="button"
+                            >
+                              {modeLabel(mode)}
+                            </button>
+                          ))}
+                          <button
+                            className={detailExpanded ? 'action-button active' : 'action-button'}
+                            onClick={() => setDetailExpanded((value) => !value)}
+                            type="button"
+                          >
+                            {detailExpanded ? 'Hide Node Detail' : 'Show Node Detail'}
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   )}
                   <button className="action-button" onClick={handleRefresh} type="button">
@@ -2031,15 +2128,135 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <p className="subtle">{graphLayoutStatus}</p>
-              <div
-                className="graph-preview"
-                onClick={handleGraphClick}
-                onContextMenu={handleGraphContextMenu}
-                onDoubleClick={handleGraphDoubleClick}
-                ref={graphPreviewRef}
-                dangerouslySetInnerHTML={{ __html: snapshotMode ? snapshotGraphSvg : graphSvg }}
-              />
+              <p className="subtle">
+                {snapshotMode
+                  ? graphLayoutStatus
+                  : previewWorkbenchMode === 'math'
+                    ? `Prototype operational-semantics card for ${mathViewModel.ruleName}.`
+                    : graphLayoutStatus}
+              </p>
+              {snapshotMode || previewWorkbenchMode === 'graph' ? (
+                <div
+                  className="graph-preview"
+                  onClick={handleGraphClick}
+                  onContextMenu={handleGraphContextMenu}
+                  onDoubleClick={handleGraphDoubleClick}
+                  ref={graphPreviewRef}
+                  dangerouslySetInnerHTML={{ __html: snapshotMode ? snapshotGraphSvg : graphSvg }}
+                />
+              ) : (
+                <div className="math-view">
+                  <div className="math-rule-summary">
+                    <span className="status-pill">Operational semantics prototype</span>
+                    <strong>{mathViewModel.ruleName}</strong>
+                    <span>
+                      Premises capture matched pattern terms, derivations show action-built terms, and the conclusion shows the final rewrite.
+                    </span>
+                  </div>
+
+                  <div className="math-section">
+                    <div className="panel-header">
+                      <h3>Premises</h3>
+                      <span>{mathViewModel.premises.length}</span>
+                    </div>
+                    <div className="target-grid">
+                      {mathViewModel.premises.map((entry) => (
+                        <div className="target-card" key={`premise:${entry.targetId}`}>
+                          <div className="target-meta">
+                            <strong>{entry.label}</strong>
+                            <span>Pattern</span>
+                          </div>
+                          {renderMathViewEntryPreview(entry.targetId, entry.source, typstRenderings, typstStatusByTargetId)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="math-section">
+                    <div className="panel-header">
+                      <h3>Side Conditions</h3>
+                      <span>{mathViewModel.sideConditions.length}</span>
+                    </div>
+                    {mathViewModel.sideConditions.length === 0 ? (
+                      <p className="empty-state">No side conditions for this rule.</p>
+                    ) : (
+                      <div className="list-stack">
+                        {mathViewModel.sideConditions.map((condition, index) => (
+                          <div className="list-card" key={`condition:${index}`}>
+                            <strong>Condition {index + 1}</strong>
+                            <span>{condition}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="math-section">
+                    <div className="panel-header">
+                      <h3>Derivations</h3>
+                      <span>{mathViewModel.derivations.length}</span>
+                    </div>
+                    <div className="target-grid">
+                      {mathViewModel.derivations.map((entry) => (
+                        <div className="target-card action" key={`derivation:${entry.targetId}`}>
+                          <div className="target-meta">
+                            <strong>{entry.label}</strong>
+                            <span>Action</span>
+                          </div>
+                          {renderMathViewEntryPreview(entry.targetId, entry.source, typstRenderings, typstStatusByTargetId)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="math-section">
+                    <div className="panel-header">
+                      <h3>Conclusion</h3>
+                      <span>{mathViewModel.conclusions.length}</span>
+                    </div>
+                    <div className="list-stack">
+                      {mathViewModel.conclusions.map((conclusion) => (
+                        conclusion.kind === 'rewrite' && conclusion.from && conclusion.to ? (
+                          <div className="math-rewrite-card" key={`conclusion:${conclusion.id}`}>
+                            <div className="math-formula-card">
+                              <span className="metric-label">From</span>
+                              {renderMathViewEntryPreview(
+                                conclusion.from.targetId,
+                                conclusion.from.source,
+                                typstRenderings,
+                                typstStatusByTargetId,
+                              )}
+                            </div>
+                            <div className="math-rewrite-arrow">⇒</div>
+                            <div className="math-formula-card">
+                              <span className="metric-label">To</span>
+                              {renderMathViewEntryPreview(
+                                conclusion.to.targetId,
+                                conclusion.to.source,
+                                typstRenderings,
+                                typstStatusByTargetId,
+                              )}
+                            </div>
+                          </div>
+                        ) : conclusion.entry ? (
+                          <div className="target-card action" key={`conclusion:${conclusion.id}`}>
+                            <div className="target-meta">
+                              <strong>{conclusion.entry.label}</strong>
+                              <span>Conclusion</span>
+                            </div>
+                            {renderMathViewEntryPreview(
+                              conclusion.entry.targetId,
+                              conclusion.entry.source,
+                              typstRenderings,
+                              typstStatusByTargetId,
+                            )}
+                          </div>
+                        ) : null
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
               {snapshotMode && snapshotGraphMode === 'typst'
                 ? snapshotTypstOverlays.map((overlay) => (
                     <div
@@ -2109,7 +2326,7 @@ export default function App() {
                     </div>
                   ))
                 : null}
-              {!snapshotMode && graphContextMenu.open ? (
+              {!snapshotMode && previewWorkbenchMode === 'graph' && graphContextMenu.open ? (
                 <div
                   className="graph-context-menu"
                   onClick={(event) => event.stopPropagation()}
@@ -2170,7 +2387,7 @@ export default function App() {
                   </button>
                 </div>
               ) : null}
-              {!snapshotMode && typstEditorTargetId ? (
+              {!snapshotMode && previewWorkbenchMode === 'graph' && typstEditorTargetId ? (
                 <div className="typst-override-panel" onClick={(event) => event.stopPropagation()}>
                   <div className="panel-header">
                     <h3>Typst Override</h3>
