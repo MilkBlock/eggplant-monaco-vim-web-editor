@@ -597,6 +597,7 @@ function typstPatternSource(
   nodeById: Map<string, PatternNode>,
   incomingCounts: Map<string, number>
 ): string {
+  const patternAtomicRenderer = (value: string) => typstColorWrap(typstAtomicExpression(value), TYPOLOGY_PATTERN_COLOR);
   if (labelStyle !== "full" && node.inputs.length > 0) {
     const recursive = recursivePatternLabel(
       ir,
@@ -605,7 +606,7 @@ function typstPatternSource(
       node.id,
       strategy,
       new Set(),
-      typstAtomicExpression
+      patternAtomicRenderer
     );
     if (recursive) {
       return typstColorWrap(recursive.text, TYPOLOGY_PATTERN_COLOR);
@@ -616,7 +617,7 @@ function typstPatternSource(
   if (typstTemplate) {
     const rendered = applyDisplayTemplate(
       typstTemplate,
-      node.inputs.map((input) => typstAtomicExpression(input)),
+      node.inputs.map((input) => patternAtomicRenderer(input)),
       variantPrecedence(ir, node.dsl_type)
     );
     if (rendered) {
@@ -625,7 +626,7 @@ function typstPatternSource(
   }
 
   if (node.inputs.length === 0) {
-    return typstColorWrap(typstAtomicExpression(node.id), TYPOLOGY_PATTERN_COLOR);
+    return typstColorWrap(patternAtomicRenderer(node.id), TYPOLOGY_PATTERN_COLOR);
   }
 
   return nodeLabel(
@@ -658,8 +659,8 @@ function recursiveActionArgLabel(
   seen: Set<string>
 ): RecursiveActionResult | null {
   const trimmed = compactExpression(arg);
-  const patternAtomicRenderer = (value: string) => typstAtomicExpression(value);
-  const actionAtomicRenderer = (value: string) => typstAtomicExpression(value);
+  const patternAtomicRenderer = (value: string) => typstColorWrap(typstAtomicExpression(value), TYPOLOGY_PATTERN_COLOR);
+  const actionAtomicRenderer = (value: string) => typstColorWrap(typstAtomicExpression(value), TYPOLOGY_ACTION_COLOR);
   if (effectByBinding.has(trimmed)) {
     const childEffectId = effectByBinding.get(trimmed);
     if (childEffectId) {
