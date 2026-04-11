@@ -194,12 +194,11 @@ function buildFixtureFromIr(
   ruleLabel: string,
   ir: PatternIr,
   mode: DotViewMode,
-  typstSizing: Record<string, RenderedTypstSnippet> = {},
 ): PreviewFixture {
   return {
     fileName,
     description: `${description} Active rule: ${ruleLabel}.`,
-    dot: patternIrToDotWithMode(ir, mode, 'recursive', 'tree-safe', typstSizing),
+    dot: patternIrToDotWithMode(ir, mode, 'recursive', 'tree-safe', {}),
     svg: buildFallbackSvg(`${fileName} · ${ruleLabel}`),
     ir,
     typstSources: buildTypstSourcesFromIr(ir, mode),
@@ -351,7 +350,6 @@ export default function App() {
         'pending scope',
         emptyIr,
         dotViewMode,
-        typstRenderings,
       );
     }
     return buildFixtureFromIr(
@@ -360,9 +358,8 @@ export default function App() {
       activeRuleScope.label,
       activeRuleScope.ir,
       dotViewMode,
-      typstRenderings,
     );
-  }, [activeRuleScope, dotViewMode, emptyIr, selectedFile, typstRenderings]);
+  }, [activeRuleScope, dotViewMode, emptyIr, selectedFile]);
   const fixture = useMemo(
     () => ({
       ...fixtureBase,
@@ -409,7 +406,7 @@ export default function App() {
         effectiveLabelStyle: 'recursive',
         recursiveStrategy: 'tree-safe',
         fileName: fixture.fileName,
-        dot: fixture.dot,
+        dot: patternIrToDotWithMode(fixture.ir, dotViewMode, 'recursive', 'tree-safe', typstRenderings),
         svg: fixture.svg,
         typstRenderings,
         typstSources: fixture.typstSources,
@@ -656,7 +653,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture, refreshNonce]);
+  }, [fixture.typstSources, refreshNonce]);
 
   const handleMount: OnMount = (editor) => {
     editorRef.current = editor;
