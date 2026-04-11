@@ -802,12 +802,9 @@ select {
 }
 
 .math-inference-premises {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  display: block;
 }
 
-.math-premise-card,
 .math-conclusion-card {
   flex: 1 1 220px;
   display: grid;
@@ -816,6 +813,48 @@ select {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   padding: 12px;
+}
+
+.math-premise-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+}
+
+.math-premise-inline {
+  display: inline-flex;
+  align-items: center;
+}
+
+.math-premise-inline.empty {
+  display: grid;
+}
+
+.math-premise-inline .typst-preview.compact,
+.math-premise-inline .typst-fallback-text,
+.math-premise-inline .status-pill,
+.math-sentence-fallback,
+.math-sentence-preview {
+  margin: 0;
+}
+
+.math-sentence-fallback {
+  color: #f4f1e8;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.math-sentence-preview {
+  display: inline-flex;
+  align-items: center;
+}
+
+.math-premise-separator {
+  color: rgba(244, 241, 232, 0.72);
+  font-size: 26px;
+  line-height: 1;
 }
 
 .math-side-conditions {

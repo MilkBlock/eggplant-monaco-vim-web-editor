@@ -1,4 +1,5 @@
 import {
+  Fragment,
   startTransition,
   useEffect,
   useMemo,
@@ -395,6 +396,8 @@ function findFirstRuleCallOffset(source: string): number | null {
 function findPreferredMathRuleOffset(source: string): number | null {
   const rulePattern =
     /(?:\b[A-Za-z_][A-Za-z0-9_]*::|\b[A-Za-z_][A-Za-z0-9_]*\.)add_rule(?:_with_hook)?\s*\(\s*"([^"]+)"/g;
+  const preferredRuleNames = ['diff_mul', 'int_mul', 'diff_add', 'int_add'];
+  const matches: Array<{ name: string; offset: number }> = [];
   let fallback: number | null = null;
   for (const match of source.matchAll(rulePattern)) {
     const full = match[0];
@@ -411,8 +414,17 @@ function findPreferredMathRuleOffset(source: string): number | null {
       fallback = absoluteOffset;
     }
     const ruleName = match[1] ?? '';
-    if (!/seed/i.test(ruleName)) {
-      return absoluteOffset;
+    matches.push({ name: ruleName, offset: absoluteOffset });
+  }
+  for (const preferredName of preferredRuleNames) {
+    const preferred = matches.find((entry) => entry.name === preferredName);
+    if (preferred) {
+      return preferred.offset;
+    }
+  }
+  for (const entry of matches) {
+    if (!/seed/i.test(entry.name)) {
+      return entry.offset;
     }
   }
   return fallback;
@@ -670,6 +682,30 @@ function renderMathViewEntryPreview(
     rendering,
     source,
     typstStatusByTargetId[targetId] ?? 'Typst: pending',
+  );
+}
+
+function renderMathSentencePreview(
+  targetId: string,
+  source: string,
+  typstRenderings: Record<string, RenderedTypstSnippet>,
+) {
+  const rendering = typstRenderings[targetId];
+  if (!rendering || rendering.mode === 'text-fallback') {
+    return (
+      <span className="math-sentence-fallback">
+        {displayTextFallbackSource(normalizeTypstMathSource(source))}
+      </span>
+    );
+  }
+  return (
+    <span className="math-sentence-preview">
+      <span
+        className="typst-preview-inline"
+        style={buildTypstPreviewInlineStyle(rendering)}
+        dangerouslySetInnerHTML={{ __html: rendering.svg }}
+      />
+    </span>
   );
 }
 
@@ -2198,22 +2234,24 @@ export default function App() {
                       <div className="math-inference-top">
                         <div className="math-inference-premises">
                           {mathViewModel.premises.length === 0 ? (
-                            <div className="math-premise-card">
-                              <span className="metric-label">Premise</span>
+                            <div className="math-premise-inline empty">
                               <p className="empty-state">No matched premise formula for this rule.</p>
                             </div>
                           ) : (
-                            mathViewModel.premises.map((entry) => (
-                              <div className="math-premise-card" key={`premise:${entry.targetId}`}>
-                                <span className="metric-label">{entry.label}</span>
-                                {renderMathViewEntryPreview(
-                                  entry.targetId,
-                                  entry.source,
-                                  typstRenderings,
-                                  typstStatusByTargetId,
-                                )}
-                              </div>
-                            ))
+                            <div className="math-premise-sentence">
+                              {mathViewModel.premises.map((entry, index) => (
+                                <Fragment key={`premise:${entry.targetId}`}>
+                                  {index > 0 ? <span className="math-premise-separator">,</span> : null}
+                                  <div className="math-premise-inline">
+                                    {renderMathSentencePreview(
+                                      entry.targetId,
+                                      entry.source,
+                                      typstRenderings,
+                                    )}
+                                  </div>
+                                </Fragment>
+                              ))}
+                            </div>
                           )}
                         </div>
                         <div className="math-side-conditions">
