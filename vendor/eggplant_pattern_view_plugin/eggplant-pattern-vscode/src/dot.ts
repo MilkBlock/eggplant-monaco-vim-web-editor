@@ -37,7 +37,7 @@ const TYPOLOGY_PATTERN_COLOR = "#5F7A8A";
 const TYPOLOGY_ACTION_COLOR = "#B86A5B";
 
 function typstColorWrap(source: string, color: string): string {
-  return `#text(fill: rgb(${JSON.stringify(color)}))[${source}]`;
+  return `#text(fill: rgb(${JSON.stringify(color)}))[$ ${source} $]`;
 }
 
 function quote(value: string): string {
