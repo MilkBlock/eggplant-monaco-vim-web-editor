@@ -805,16 +805,6 @@ select {
   display: block;
 }
 
-.math-conclusion-card {
-  flex: 1 1 220px;
-  display: grid;
-  gap: 8px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px;
-}
-
 .math-premise-sentence {
   display: flex;
   flex-wrap: wrap;
@@ -883,20 +873,17 @@ select {
   gap: 12px;
 }
 
-.math-rewrite-card {
+.math-rewrite-line {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 12px;
   align-items: center;
 }
 
-.math-formula-card {
-  display: grid;
-  gap: 8px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 12px;
+.math-conclusion-inline {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .math-entry-preview {
@@ -1029,7 +1016,7 @@ select {
     padding-right: 0;
   }
 
-  .math-rewrite-card {
+  .math-rewrite-line {
     grid-template-columns: 1fr;
   }
 

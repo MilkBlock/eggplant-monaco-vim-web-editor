@@ -2270,42 +2270,33 @@ export default function App() {
                       <div className="math-rule-bar" />
                       <div className="math-inference-conclusion">
                         {mathViewModel.conclusions.length === 0 ? (
-                          <div className="math-conclusion-card">
-                            <span className="metric-label">Conclusion</span>
-                            <p className="empty-state">No rewrite conclusion recognized yet for this rule.</p>
-                          </div>
+                          <p className="empty-state">No rewrite conclusion recognized yet for this rule.</p>
                         ) : (
                           mathViewModel.conclusions.map((conclusion) => (
                             conclusion.kind === 'rewrite' && conclusion.from && conclusion.to ? (
-                              <div className="math-rewrite-card" key={`conclusion:${conclusion.id}`}>
-                                <div className="math-formula-card">
-                                  <span className="metric-label">Matched expression</span>
-                                  {renderMathViewEntryPreview(
+                              <div className="math-rewrite-line" key={`conclusion:${conclusion.id}`}>
+                                <div className="math-conclusion-inline">
+                                  {renderMathSentencePreview(
                                     conclusion.from.targetId,
                                     conclusion.from.source,
                                     typstRenderings,
-                                    typstStatusByTargetId,
                                   )}
                                 </div>
                                 <div className="math-rewrite-arrow">⟹</div>
-                                <div className="math-formula-card">
-                                  <span className="metric-label">Rewrites to</span>
-                                  {renderMathViewEntryPreview(
+                                <div className="math-conclusion-inline">
+                                  {renderMathSentencePreview(
                                     conclusion.to.targetId,
                                     conclusion.to.source,
                                     typstRenderings,
-                                    typstStatusByTargetId,
                                   )}
                                 </div>
                               </div>
                             ) : conclusion.entry ? (
-                              <div className="math-conclusion-card" key={`conclusion:${conclusion.id}`}>
-                                <span className="metric-label">Conclusion</span>
-                                {renderMathViewEntryPreview(
+                              <div className="math-conclusion-inline" key={`conclusion:${conclusion.id}`}>
+                                {renderMathSentencePreview(
                                   conclusion.entry.targetId,
                                   conclusion.entry.source,
                                   typstRenderings,
-                                  typstStatusByTargetId,
                                 )}
                               </div>
                             ) : null
