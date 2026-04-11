@@ -392,6 +392,32 @@ function findFirstRuleCallOffset(source: string): number | null {
   return match.index + callOffset;
 }
 
+function findPreferredMathRuleOffset(source: string): number | null {
+  const rulePattern =
+    /(?:\b[A-Za-z_][A-Za-z0-9_]*::|\b[A-Za-z_][A-Za-z0-9_]*\.)add_rule(?:_with_hook)?\s*\(\s*"([^"]+)"/g;
+  let fallback: number | null = null;
+  for (const match of source.matchAll(rulePattern)) {
+    const full = match[0];
+    const index = match.index;
+    if (typeof index !== 'number') {
+      continue;
+    }
+    const callOffset = full.search(/add_rule(?:_with_hook)?\s*\(/);
+    if (callOffset < 0) {
+      continue;
+    }
+    const absoluteOffset = index + callOffset;
+    if (fallback === null) {
+      fallback = absoluteOffset;
+    }
+    const ruleName = match[1] ?? '';
+    if (!/seed/i.test(ruleName)) {
+      return absoluteOffset;
+    }
+  }
+  return fallback;
+}
+
 function buildTypstSourcesFromIr(
   ir: PatternIr,
   mode: DotViewMode = 'combined',
@@ -1135,7 +1161,11 @@ export default function App() {
 
   useEffect(() => {
     setDotViewMode('combined');
-    setCursorUtf16Offset(findFirstRuleCallOffset(selectedFile.source) ?? 0);
+    setCursorUtf16Offset(
+      previewWorkbenchMode === 'math'
+        ? findPreferredMathRuleOffset(selectedFile.source) ?? 0
+        : findFirstRuleCallOffset(selectedFile.source) ?? 0
+    );
     setActiveRuleScope(null);
     setRuleSyncStatus('Waiting for extractor...');
     setInteractionState(createDefaultPreviewInteractionState());
@@ -1144,7 +1174,7 @@ export default function App() {
     setTypstEditorTargetId('');
     setTypstEditorValue('');
     setClipboardStatus('');
-  }, [selectedFile]);
+  }, [previewWorkbenchMode, selectedFile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1318,7 +1348,12 @@ export default function App() {
     if (model) {
       const initialPosition = editor.getPosition();
       const initialOffset = initialPosition ? model.getOffsetAt(initialPosition) : 0;
-      const fallbackOffset = initialOffset === 0 ? findFirstRuleCallOffset(model.getValue()) : null;
+      const fallbackOffset =
+        initialOffset === 0
+          ? previewWorkbenchMode === 'math'
+            ? findPreferredMathRuleOffset(model.getValue())
+            : findFirstRuleCallOffset(model.getValue())
+          : null;
       const nextOffset = fallbackOffset ?? initialOffset;
       setCursorUtf16Offset(nextOffset);
       if (fallbackOffset !== null) {
@@ -2156,44 +2191,95 @@ export default function App() {
 
                   <div className="math-section">
                     <div className="panel-header">
-                      <h3>Premises</h3>
-                      <span>{mathViewModel.premises.length}</span>
+                      <h3>Inference Rule</h3>
+                      <span>{mathViewModel.conclusions.length > 0 ? 'rewrite' : 'prototype'}</span>
                     </div>
-                    <div className="target-grid">
-                      {mathViewModel.premises.map((entry) => (
-                        <div className="target-card" key={`premise:${entry.targetId}`}>
-                          <div className="target-meta">
-                            <strong>{entry.label}</strong>
-                            <span>Pattern</span>
-                          </div>
-                          {renderMathViewEntryPreview(entry.targetId, entry.source, typstRenderings, typstStatusByTargetId)}
+                    <div className="math-inference-rule">
+                      <div className="math-inference-top">
+                        <div className="math-inference-premises">
+                          {mathViewModel.premises.length === 0 ? (
+                            <div className="math-premise-card">
+                              <span className="metric-label">Premise</span>
+                              <p className="empty-state">No matched premise formula for this rule.</p>
+                            </div>
+                          ) : (
+                            mathViewModel.premises.map((entry) => (
+                              <div className="math-premise-card" key={`premise:${entry.targetId}`}>
+                                <span className="metric-label">{entry.label}</span>
+                                {renderMathViewEntryPreview(
+                                  entry.targetId,
+                                  entry.source,
+                                  typstRenderings,
+                                  typstStatusByTargetId,
+                                )}
+                              </div>
+                            ))
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="math-section">
-                    <div className="panel-header">
-                      <h3>Side Conditions</h3>
-                      <span>{mathViewModel.sideConditions.length}</span>
-                    </div>
-                    {mathViewModel.sideConditions.length === 0 ? (
-                      <p className="empty-state">No side conditions for this rule.</p>
-                    ) : (
-                      <div className="list-stack">
-                        {mathViewModel.sideConditions.map((condition, index) => (
-                          <div className="list-card" key={`condition:${index}`}>
-                            <strong>Condition {index + 1}</strong>
-                            <span>{condition}</span>
-                          </div>
-                        ))}
+                        <div className="math-side-conditions">
+                          <span className="metric-label">Side conditions</span>
+                          {mathViewModel.sideConditions.length === 0 ? (
+                            <p className="empty-state">None</p>
+                          ) : (
+                            mathViewModel.sideConditions.map((condition, index) => (
+                              <div className="math-condition-chip" key={`condition:${index}`}>
+                                {condition}
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </div>
-                    )}
+                      <div className="math-rule-bar" />
+                      <div className="math-inference-conclusion">
+                        {mathViewModel.conclusions.length === 0 ? (
+                          <div className="math-conclusion-card">
+                            <span className="metric-label">Conclusion</span>
+                            <p className="empty-state">No rewrite conclusion recognized yet for this rule.</p>
+                          </div>
+                        ) : (
+                          mathViewModel.conclusions.map((conclusion) => (
+                            conclusion.kind === 'rewrite' && conclusion.from && conclusion.to ? (
+                              <div className="math-rewrite-card" key={`conclusion:${conclusion.id}`}>
+                                <div className="math-formula-card">
+                                  <span className="metric-label">Matched expression</span>
+                                  {renderMathViewEntryPreview(
+                                    conclusion.from.targetId,
+                                    conclusion.from.source,
+                                    typstRenderings,
+                                    typstStatusByTargetId,
+                                  )}
+                                </div>
+                                <div className="math-rewrite-arrow">⟹</div>
+                                <div className="math-formula-card">
+                                  <span className="metric-label">Rewrites to</span>
+                                  {renderMathViewEntryPreview(
+                                    conclusion.to.targetId,
+                                    conclusion.to.source,
+                                    typstRenderings,
+                                    typstStatusByTargetId,
+                                  )}
+                                </div>
+                              </div>
+                            ) : conclusion.entry ? (
+                              <div className="math-conclusion-card" key={`conclusion:${conclusion.id}`}>
+                                <span className="metric-label">Conclusion</span>
+                                {renderMathViewEntryPreview(
+                                  conclusion.entry.targetId,
+                                  conclusion.entry.source,
+                                  typstRenderings,
+                                  typstStatusByTargetId,
+                                )}
+                              </div>
+                            ) : null
+                          ))
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="math-section">
                     <div className="panel-header">
-                      <h3>Derivations</h3>
+                      <h3>Derivation Trace</h3>
                       <span>{mathViewModel.derivations.length}</span>
                     </div>
                     <div className="target-grid">
@@ -2205,53 +2291,6 @@ export default function App() {
                           </div>
                           {renderMathViewEntryPreview(entry.targetId, entry.source, typstRenderings, typstStatusByTargetId)}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="math-section">
-                    <div className="panel-header">
-                      <h3>Conclusion</h3>
-                      <span>{mathViewModel.conclusions.length}</span>
-                    </div>
-                    <div className="list-stack">
-                      {mathViewModel.conclusions.map((conclusion) => (
-                        conclusion.kind === 'rewrite' && conclusion.from && conclusion.to ? (
-                          <div className="math-rewrite-card" key={`conclusion:${conclusion.id}`}>
-                            <div className="math-formula-card">
-                              <span className="metric-label">From</span>
-                              {renderMathViewEntryPreview(
-                                conclusion.from.targetId,
-                                conclusion.from.source,
-                                typstRenderings,
-                                typstStatusByTargetId,
-                              )}
-                            </div>
-                            <div className="math-rewrite-arrow">⇒</div>
-                            <div className="math-formula-card">
-                              <span className="metric-label">To</span>
-                              {renderMathViewEntryPreview(
-                                conclusion.to.targetId,
-                                conclusion.to.source,
-                                typstRenderings,
-                                typstStatusByTargetId,
-                              )}
-                            </div>
-                          </div>
-                        ) : conclusion.entry ? (
-                          <div className="target-card action" key={`conclusion:${conclusion.id}`}>
-                            <div className="target-meta">
-                              <strong>{conclusion.entry.label}</strong>
-                              <span>Conclusion</span>
-                            </div>
-                            {renderMathViewEntryPreview(
-                              conclusion.entry.targetId,
-                              conclusion.entry.source,
-                              typstRenderings,
-                              typstStatusByTargetId,
-                            )}
-                          </div>
-                        ) : null
                       ))}
                     </div>
                   </div>

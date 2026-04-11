@@ -785,20 +785,79 @@ select {
   gap: 10px;
 }
 
+.math-inference-rule {
+  display: grid;
+  gap: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(16, 21, 29, 0.92);
+  padding: 16px;
+}
+
+.math-inference-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  gap: 14px;
+  align-items: start;
+}
+
+.math-inference-premises {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.math-premise-card,
+.math-conclusion-card {
+  flex: 1 1 220px;
+  display: grid;
+  gap: 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
+}
+
+.math-side-conditions {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.math-condition-chip {
+  border-radius: 12px;
+  background: rgba(255, 191, 105, 0.14);
+  border: 1px solid rgba(255, 191, 105, 0.3);
+  color: #ffe2b4;
+  padding: 10px 12px;
+  line-height: 1.4;
+}
+
+.math-rule-bar {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.78), rgba(255, 191, 105, 0.74));
+}
+
+.math-inference-conclusion {
+  display: grid;
+  gap: 12px;
+}
+
 .math-rewrite-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(16, 21, 29, 0.92);
-  padding: 14px;
 }
 
 .math-formula-card {
   display: grid;
   gap: 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 12px;
 }
 
 .math-entry-preview {
@@ -937,5 +996,9 @@ select {
 
   .math-rewrite-arrow {
     justify-self: center;
+  }
+
+  .math-inference-top {
+    grid-template-columns: 1fr;
   }
 }
