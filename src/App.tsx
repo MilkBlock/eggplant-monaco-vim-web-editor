@@ -769,6 +769,10 @@ export default function App() {
     () => deriveTypstStatusByTargetId(fixture.typstSources, typstRenderings),
     [fixture.typstSources, typstRenderings],
   );
+  const previewDot = useMemo(
+    () => patternIrToDotWithMode(fixture.ir, dotViewMode, effectiveLabelStyle, 'tree-safe', typstRenderings),
+    [dotViewMode, effectiveLabelStyle, fixture.ir, typstRenderings],
+  );
   const previewState = useMemo(
     () =>
       buildPreviewPanelState({
@@ -778,7 +782,7 @@ export default function App() {
         effectiveLabelStyle,
         recursiveStrategy: 'tree-safe',
         fileName: fixture.fileName,
-        dot: fixture.dot,
+        dot: previewDot,
         svg: fixture.svg,
         typstRenderings,
         typstSources: fixture.typstSources,
@@ -804,6 +808,7 @@ export default function App() {
       dotViewMode,
       effectiveLabelStyle,
       fixture,
+      previewDot,
       ruleChecks,
       typstRenderings,
       typstStatusByTargetId,
@@ -1225,7 +1230,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [fixture, refreshNonce]);
+  }, [fixture.typstSources, refreshNonce]);
 
   const handleMount: OnMount = (editor) => {
     editorRef.current = editor;
