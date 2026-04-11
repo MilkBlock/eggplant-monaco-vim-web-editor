@@ -1,5 +1,4 @@
 import {
-  Fragment,
   startTransition,
   useEffect,
   useMemo,
@@ -56,7 +55,7 @@ import { extractPatternIr } from './webExtractor';
 import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
 import { decodeBinaryPersistedSnapshot } from './snapshotBinary';
-import { buildMathViewModel, type MathViewModel } from './mathView';
+import { buildMathViewModel, buildMathViewTypstSource, type MathViewModel } from './mathView';
 import { transpileEggSource } from './webTranspiler';
 
 type SampleFile = {
@@ -181,8 +180,9 @@ type GraphContextMenuState = {
 
 type GraphZoomState = {
   open: boolean;
-  sourceMode: 'code' | 'snapshot';
+  sourceMode: 'code' | 'snapshot' | 'math';
   svg: string;
+  fallbackText: string;
 };
 
 type SnapshotTypstOverlay = {
@@ -225,6 +225,7 @@ const closedGraphZoom: GraphZoomState = {
   open: false,
   sourceMode: 'code',
   svg: '',
+  fallbackText: '',
 };
 
 function collectMathViewSources(model: MathViewModel): Record<string, string> {
@@ -241,6 +242,10 @@ function collectMathViewSources(model: MathViewModel): Record<string, string> {
     }
   }
   return Object.fromEntries(entries.map((entry) => [entry.targetId, entry.source]));
+}
+
+function mathViewFormulaTargetId(ruleName: string): string {
+  return `math-view:${ruleName}`;
 }
 
 function previewWorkbenchModeFromSearch(search: string): PreviewWorkbenchMode {
@@ -685,27 +690,40 @@ function renderMathViewEntryPreview(
   );
 }
 
-function renderMathSentencePreview(
+function renderMathRuleFormulaPreview(
   targetId: string,
   source: string,
   typstRenderings: Record<string, RenderedTypstSnippet>,
+  typstStatusByTargetId: Record<string, string>,
 ) {
   const rendering = typstRenderings[targetId];
-  if (!rendering || rendering.mode === 'text-fallback') {
+  if (!rendering) {
     return (
-      <span className="math-sentence-fallback">
-        {displayTextFallbackSource(normalizeTypstMathSource(source))}
-      </span>
+      <div className="math-formula-fallback-block">
+        <div className="status-pill">{typstStatusByTargetId[targetId] ?? 'Typst: pending'}</div>
+        <pre className="typst-fallback-text">
+          {displayTextFallbackSource(normalizeTypstMathSource(source))}
+        </pre>
+      </div>
+    );
+  }
+  if (rendering.mode === 'text-fallback') {
+    return (
+      <div className="math-formula-fallback-block">
+        <div className="status-pill">{typstStatusByTargetId[targetId] ?? 'Typst: fallback text'}</div>
+        <pre className="typst-fallback-text">
+          {displayTextFallbackSource(normalizeTypstMathSource(source))}
+        </pre>
+      </div>
     );
   }
   return (
-    <span className="math-sentence-preview">
-      <span
-        className="typst-preview-inline"
-        style={buildTypstPreviewInlineStyle(rendering)}
+    <div className="math-formula-svg">
+      <div
+        className="math-formula-svg-inner"
         dangerouslySetInnerHTML={{ __html: rendering.svg }}
       />
-    </span>
+    </div>
   );
 }
 
@@ -857,13 +875,16 @@ export default function App() {
     [activeRuleScope, dotViewMode, effectiveLabelStyle, fixtureBase, typstOverrides],
   );
   const mathViewModel = useMemo(() => buildMathViewModel(fixture.ir, source), [fixture.ir, source]);
+  const mathViewFormulaSource = useMemo(() => buildMathViewTypstSource(mathViewModel), [mathViewModel]);
+  const mathViewFormulaId = useMemo(() => mathViewFormulaTargetId(mathViewModel.ruleName), [mathViewModel.ruleName]);
   const mathViewSources = useMemo(() => collectMathViewSources(mathViewModel), [mathViewModel]);
   const activeTypstSources = useMemo(
     () => ({
+      [mathViewFormulaId]: mathViewFormulaSource,
       ...mathViewSources,
       ...fixture.typstSources,
     }),
-    [fixture.typstSources, mathViewSources],
+    [fixture.typstSources, mathViewFormulaId, mathViewFormulaSource, mathViewSources],
   );
 
   const stats = useMemo(() => {
@@ -1558,6 +1579,18 @@ export default function App() {
       open: true,
       sourceMode: snapshotMode ? 'snapshot' : 'code',
       svg: snapshotMode ? snapshotGraphSvg : graphSvg,
+      fallbackText: '',
+    });
+  };
+
+  const handleMathViewDoubleClick = () => {
+    const rendering = typstRenderings[mathViewFormulaId];
+    setGraphContextMenu(closedGraphContextMenu);
+    setGraphZoomState({
+      open: true,
+      sourceMode: 'math',
+      svg: rendering?.mode === 'math' ? rendering.svg : '',
+      fallbackText: displayTextFallbackSource(normalizeTypstMathSource(mathViewFormulaSource)),
     });
   };
 
@@ -2231,77 +2264,15 @@ export default function App() {
                       <span>{mathViewModel.conclusions.length > 0 ? 'rewrite' : 'prototype'}</span>
                     </div>
                     <div className="math-inference-rule">
-                      <div className="math-inference-top">
-                        <div className="math-inference-premises">
-                          {mathViewModel.premises.length === 0 ? (
-                            <div className="math-premise-inline empty">
-                              <p className="empty-state">No matched premise formula for this rule.</p>
-                            </div>
-                          ) : (
-                            <div className="math-premise-sentence">
-                              {mathViewModel.premises.map((entry, index) => (
-                                <Fragment key={`premise:${entry.targetId}`}>
-                                  {index > 0 ? <span className="math-premise-separator">,</span> : null}
-                                  <div className="math-premise-inline">
-                                    {renderMathSentencePreview(
-                                      entry.targetId,
-                                      entry.source,
-                                      typstRenderings,
-                                    )}
-                                  </div>
-                                </Fragment>
-                              ))}
-                            </div>
+                      <div className="math-formula-scroll" onDoubleClick={handleMathViewDoubleClick}>
+                        <div className="math-formula-canvas">
+                          {renderMathRuleFormulaPreview(
+                            mathViewFormulaId,
+                            mathViewFormulaSource,
+                            typstRenderings,
+                            typstStatusByTargetId,
                           )}
                         </div>
-                        <div className="math-side-conditions">
-                          <span className="metric-label">Side conditions</span>
-                          {mathViewModel.sideConditions.length === 0 ? (
-                            <p className="empty-state">None</p>
-                          ) : (
-                            mathViewModel.sideConditions.map((condition, index) => (
-                              <div className="math-condition-chip" key={`condition:${index}`}>
-                                {condition}
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                      <div className="math-rule-bar" />
-                      <div className="math-inference-conclusion">
-                        {mathViewModel.conclusions.length === 0 ? (
-                          <p className="empty-state">No rewrite conclusion recognized yet for this rule.</p>
-                        ) : (
-                          mathViewModel.conclusions.map((conclusion) => (
-                            conclusion.kind === 'rewrite' && conclusion.from && conclusion.to ? (
-                              <div className="math-rewrite-line" key={`conclusion:${conclusion.id}`}>
-                                <div className="math-conclusion-inline">
-                                  {renderMathSentencePreview(
-                                    conclusion.from.targetId,
-                                    conclusion.from.source,
-                                    typstRenderings,
-                                  )}
-                                </div>
-                                <div className="math-rewrite-arrow">⟹</div>
-                                <div className="math-conclusion-inline">
-                                  {renderMathSentencePreview(
-                                    conclusion.to.targetId,
-                                    conclusion.to.source,
-                                    typstRenderings,
-                                  )}
-                                </div>
-                              </div>
-                            ) : conclusion.entry ? (
-                              <div className="math-conclusion-inline" key={`conclusion:${conclusion.id}`}>
-                                {renderMathSentencePreview(
-                                  conclusion.entry.targetId,
-                                  conclusion.entry.source,
-                                  typstRenderings,
-                                )}
-                              </div>
-                            ) : null
-                          ))
-                        )}
                       </div>
                     </div>
                   </div>
@@ -2763,7 +2734,13 @@ export default function App() {
             onClick={(event) => event.stopPropagation()}
           >
             <div className="graph-zoom-header">
-              <strong>{graphZoomState.sourceMode === 'snapshot' ? 'Snapshot Graph' : 'Graph Snapshot'}</strong>
+              <strong>
+                {graphZoomState.sourceMode === 'snapshot'
+                  ? 'Snapshot Graph'
+                  : graphZoomState.sourceMode === 'math'
+                    ? 'Math Formula'
+                    : 'Graph Snapshot'}
+              </strong>
               <div className="button-row">
                 <span className="status-pill">Zoom {Math.round(graphZoomScale * 100)}%</span>
                 <button className="action-button" onClick={() => setGraphZoomScale(1)} type="button">
@@ -2777,19 +2754,29 @@ export default function App() {
             <div
               className="graph-zoom-content"
               ref={graphZoomContentRef}
-              onClick={handleGraphClick}
-              onDoubleClick={handleGraphZoomDoubleClick}
-              onMouseDown={handleGraphZoomPointerDown}
-              onMouseMove={handleGraphZoomPointerMove}
-              onMouseUp={handleGraphZoomPointerUp}
-              onMouseLeave={handleGraphZoomPointerUp}
-              onWheel={handleGraphZoomWheel}
+              onClick={graphZoomState.sourceMode === 'math' ? undefined : handleGraphClick}
+              onDoubleClick={graphZoomState.sourceMode === 'math' ? undefined : handleGraphZoomDoubleClick}
+              onMouseDown={graphZoomState.sourceMode === 'math' ? undefined : handleGraphZoomPointerDown}
+              onMouseMove={graphZoomState.sourceMode === 'math' ? undefined : handleGraphZoomPointerMove}
+              onMouseUp={graphZoomState.sourceMode === 'math' ? undefined : handleGraphZoomPointerUp}
+              onMouseLeave={graphZoomState.sourceMode === 'math' ? undefined : handleGraphZoomPointerUp}
+              onWheel={graphZoomState.sourceMode === 'math' ? undefined : handleGraphZoomWheel}
             >
               <div
                 className="graph-zoom-canvas"
                 style={{ transform: `scale(${graphZoomScale})` }}
-                dangerouslySetInnerHTML={{ __html: graphZoomState.svg }}
-              />
+              >
+                {graphZoomState.sourceMode === 'math'
+                  ? graphZoomState.svg
+                    ? (
+                        <div
+                          className="math-formula-svg-inner"
+                          dangerouslySetInnerHTML={{ __html: graphZoomState.svg }}
+                        />
+                      )
+                    : <pre className="typst-fallback-text">{graphZoomState.fallbackText}</pre>
+                  : <div dangerouslySetInnerHTML={{ __html: graphZoomState.svg }} />}
+              </div>
             </div>
           </div>
         </div>

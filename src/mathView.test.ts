@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { PatternIr } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/ir';
-import { buildMathViewModel } from './mathView';
+import { buildMathViewModel, buildMathViewTypstSource } from './mathView';
 
 test('buildMathViewModel organizes diff_mul into premises, derivations, and rewrite conclusion', () => {
   const ir: PatternIr = {
@@ -123,4 +123,31 @@ test('buildMathViewModel organizes diff_mul into premises, derivations, and rewr
   assert.equal(model.conclusions[0].kind, 'rewrite');
   assert.equal(model.conclusions[0].from?.targetId, 'diff');
   assert.equal(model.conclusions[0].to?.targetId, 'effect:effect_4');
+});
+
+test('buildMathViewTypstSource produces one multiline inference-rule formula', () => {
+  const model = {
+    ruleName: 'diff_mul',
+    premises: [
+      { targetId: 'mul', source: 'a * b', label: 'mul' },
+      { targetId: 'diff', source: `(a * b)'(x)`, label: 'diff' },
+    ],
+    sideConditions: ['guard(a, b)'],
+    derivations: [],
+    conclusions: [
+      {
+        id: 'effect_5',
+        kind: 'rewrite' as const,
+        from: { targetId: 'diff', source: `(a * b)'(x)`, label: 'diff' },
+        to: { targetId: 'rhs', source: `a * b'(x) + b * a'(x)`, label: 'rhs' },
+      },
+    ],
+  };
+
+  const source = buildMathViewTypstSource(model);
+
+  assert.match(source, /frac\(/);
+  assert.match(source, / \\ /);
+  assert.match(source, /arrow\.r\.double/);
+  assert.match(source, /guard\(a, b\)/);
 });

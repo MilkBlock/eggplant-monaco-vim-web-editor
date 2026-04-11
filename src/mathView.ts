@@ -149,3 +149,22 @@ export function buildMathViewModel(ir: PatternIr, source: string): MathViewModel
     conclusions,
   };
 }
+
+export function buildMathViewTypstSource(model: MathViewModel): string {
+  const premises = model.premises.length > 0
+    ? model.premises.map((entry) => entry.source).join(' \\ ')
+    : 'upright("no matched premise")';
+  const sideConditions = model.sideConditions.length > 0
+    ? model.sideConditions.join(' \\ ')
+    : 'upright("None")';
+
+  let conclusion = 'upright("no conclusion")';
+  const rewrite = model.conclusions.find((entry) => entry.kind === 'rewrite' && entry.from && entry.to);
+  if (rewrite?.from && rewrite.to) {
+    conclusion = `${rewrite.from.source} arrow.r.double ${rewrite.to.source}`;
+  } else if (model.conclusions[0]?.entry) {
+    conclusion = model.conclusions[0].entry.source;
+  }
+
+  return `frac(${premises}, ${conclusion}) quad upright("if") quad ${sideConditions}`;
+}

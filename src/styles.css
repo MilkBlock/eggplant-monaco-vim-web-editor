@@ -794,6 +794,41 @@ select {
   padding: 16px;
 }
 
+.math-formula-scroll {
+  overflow: auto hidden;
+  padding-bottom: 8px;
+  cursor: ew-resize;
+}
+
+.math-formula-canvas {
+  width: max-content;
+  min-width: 100%;
+}
+
+.math-formula-svg {
+  width: max-content;
+  min-width: 100%;
+}
+
+.math-formula-svg-inner {
+  width: max-content;
+  min-width: 100%;
+}
+
+.math-formula-svg-inner svg {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  height: auto;
+}
+
+.math-formula-fallback-block {
+  display: grid;
+  gap: 8px;
+  width: max-content;
+  min-width: 100%;
+}
+
 .math-inference-top {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
