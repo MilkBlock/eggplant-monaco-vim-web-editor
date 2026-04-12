@@ -53,6 +53,18 @@ export interface PreviewInteractionProjection {
   highlightedActionEffectIds: string[];
 }
 
+export interface MathViewPreviewEntry {
+  targetId: string;
+  label: string;
+}
+
+export interface MathViewPreviewState {
+  ruleName: string;
+  formulaTargetId: string;
+  formulaSource: string;
+  derivations: MathViewPreviewEntry[];
+}
+
 export interface PreviewPanelState {
   renderNonce?: number;
   title: string;
@@ -91,6 +103,7 @@ export interface PreviewPanelState {
   sourceWarning: string | null;
   showSwitchToAst: boolean;
   notice: string | null;
+  mathView: MathViewPreviewState | null;
 }
 
 export interface BuildPreviewPanelStateInput {
@@ -119,6 +132,7 @@ export interface BuildPreviewPanelStateInput {
   sourceWarning: string | null;
   showSwitchToAst: boolean;
   notice: string | null;
+  mathView: MathViewPreviewState | null;
 }
 
 export function createDefaultPreviewInteractionState(): PreviewInteractionState {
@@ -141,8 +155,8 @@ export function buildConstraintEntries(
     .filter((constraint) => options.includeInlineHidden || inlineConstraintAnnotation(constraint)?.hideInSidebar !== true)
     .map((constraint) => ({
       id: constraint.id,
-      compactText: compactConstraintLabel(constraint.source_text, constraint.resolved_text),
-      fullText: constraint.resolved_text,
+      compactText: constraint.semantic_text?.trim() || compactConstraintLabel(constraint.source_text, constraint.resolved_text),
+      fullText: constraint.semantic_text?.trim() || constraint.resolved_text,
       sourceText: constraint.source_text,
       referencedNodeIds: (() => {
         const referenced = constraint.referenced_vars.filter((name) => nodeIds.has(name) || rootIds.has(name));
@@ -400,7 +414,8 @@ export function buildPreviewPanelState(input: BuildPreviewPanelStateInput): Prev
     recoveryDiagnostics,
     sourceWarning,
     showSwitchToAst,
-    notice
+    notice,
+    mathView
   } = input;
   const projection = projectPreviewInteractionState(interactionState, ruleChecks, constraints);
   const projectedState = projection.state;
@@ -439,6 +454,7 @@ export function buildPreviewPanelState(input: BuildPreviewPanelStateInput): Prev
     recoveryDiagnostics,
     sourceWarning,
     showSwitchToAst,
-    notice
+    notice,
+    mathView
   };
 }

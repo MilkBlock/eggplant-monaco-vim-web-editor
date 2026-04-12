@@ -968,6 +968,15 @@ export default function App() {
         sourceWarning: null,
         showSwitchToAst: false,
         notice: `${fixture.description} Shared contract imported from the plugin repo.`,
+        mathView: {
+          ruleName: mathViewModel.ruleName,
+          formulaTargetId: mathViewFormulaId,
+          formulaSource: mathViewFormulaSource,
+          derivations: mathViewModel.derivations.map((entry) => ({
+            targetId: entry.targetId,
+            label: entry.label,
+          })),
+        },
       }),
     [
       activeState,

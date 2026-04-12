@@ -1,5 +1,5 @@
-import { collectTypstReplacementSources, compactConstraintLabel } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/dot';
-import type { ActionEffect, PatternIr, PatternNode, TextSpan } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/ir';
+import { collectTypstReplacementSources, compactConstraintLabel } from '@eggplant-vscode/dot';
+import type { ActionEffect, PatternIr, PatternNode, TextSpan } from '@eggplant-vscode/ir';
 
 export interface MathViewEntry {
   targetId: string;
@@ -22,6 +22,19 @@ export interface MathViewModel {
   derivations: MathViewEntry[];
   conclusions: MathViewConclusion[];
 }
+
+const MATH_VIEW_RESERVED_IDENTIFIERS = new Set([
+  'frac',
+  'sqrt',
+  'sin',
+  'cos',
+  'ln',
+  'integral',
+  'quad',
+  'upright',
+  'text',
+  'arrow',
+]);
 
 function parseRuleNameFromSource(source: string, range: TextSpan): string {
   const slice = source.slice(range.start, range.end);
@@ -46,12 +59,71 @@ function buildEntryLabel(targetId: string, node?: PatternNode, effect?: ActionEf
   return targetId;
 }
 
+function isFunctionLikeDslType(dslType: string): boolean {
+  return /^[a-z][A-Za-z0-9_]*$/.test(dslType);
+}
+
+function semanticIdentifierToTypst(identifier: string, isFunctionCall: boolean): string {
+  if (MATH_VIEW_RESERVED_IDENTIFIERS.has(identifier)) {
+    return identifier;
+  }
+  if (/^[A-Za-z]$/.test(identifier)) {
+    return identifier;
+  }
+  const singleLetterWithIndex = identifier.match(/^([A-Za-z])(\d+)$/);
+  if (singleLetterWithIndex) {
+    return `${singleLetterWithIndex[1]}_${singleLetterWithIndex[2]}`;
+  }
+  if (identifier.includes('.')) {
+    return `upright(${JSON.stringify(identifier)})`;
+  }
+  if (isFunctionCall || /^[A-Za-z_][A-Za-z0-9_]*$/.test(identifier)) {
+    return `upright(${JSON.stringify(identifier)})`;
+  }
+  return identifier;
+}
+
+function semanticTextToTypst(source: string): string {
+  let result = '';
+  let index = 0;
+  while (index < source.length) {
+    const char = source[index];
+    if (!/[A-Za-z_]/.test(char)) {
+      result += char;
+      index += 1;
+      continue;
+    }
+
+    let end = index + 1;
+    while (end < source.length && /[A-Za-z0-9_.]/.test(source[end])) {
+      end += 1;
+    }
+
+    const identifier = source.slice(index, end);
+    let lookahead = end;
+    while (lookahead < source.length && /\s/.test(source[lookahead])) {
+      lookahead += 1;
+    }
+    const isFunctionCall = source[lookahead] === '(';
+    result += semanticIdentifierToTypst(identifier, isFunctionCall);
+    index = end;
+  }
+  return result;
+}
+
 function buildEntry(targetId: string, source: string, ir: PatternIr): MathViewEntry {
   const node = ir.nodes.find((entry) => entry.id === targetId);
   const effect = ir.action_effects.find((entry) => `effect:${entry.id}` === targetId);
+  const semanticSource = effect?.semantic_text
+    ? semanticTextToTypst(effect.semantic_text)
+    : node?.kind === 'query_leaf'
+      ? semanticTextToTypst(node.id)
+      : node && isFunctionLikeDslType(node.dsl_type)
+        ? semanticTextToTypst(`${node.dsl_type}(${node.inputs.join(', ')})`)
+        : source;
   return {
     targetId,
-    source,
+    source: semanticSource,
     label: buildEntryLabel(targetId, node, effect),
   };
 }
@@ -84,12 +156,12 @@ export function buildMathViewModel(ir: PatternIr, source: string): MathViewModel
     .sort((left, right) => entrySortOrder(ir, left.targetId) - entrySortOrder(ir, right.targetId))
     .map((entry) => buildEntry(entry.targetId, entry.source, ir));
 
-  const patternById = new Map(patternEntries.map((entry) => [entry.targetId, entry]));
+  const patternById = new Map(patternEntries.map((entry) => [entry.targetId, entry] as const));
   const actionByBoundVar = new Map(
     ir.action_effects
       .filter((effect) => effect.bound_var)
-      .map((effect) => [effect.bound_var as string, actionEntries.find((entry) => entry.targetId === `effect:${effect.id}`)])
-      .filter((entry): entry is [string, MathViewEntry] => Boolean(entry[1]))
+      .map((effect) => [effect.bound_var as string, actionEntries.find((entry) => entry.targetId === `effect:${effect.id}`)] as const)
+      .filter((entry): entry is readonly [string, MathViewEntry] => entry[1] !== undefined)
   );
 
   const conclusions: MathViewConclusion[] = [];
@@ -124,11 +196,14 @@ export function buildMathViewModel(ir: PatternIr, source: string): MathViewModel
     }
 
     for (const effect of ir.action_effects) {
-      if (!effect.bound_var || consumedByMaterial.has(effect.bound_var)) {
-        continue;
-      }
       const entry = actionEntries.find((candidate) => candidate.targetId === `effect:${effect.id}`);
       if (!entry) {
+        continue;
+      }
+      if (effect.bound_var && consumedByMaterial.has(effect.bound_var)) {
+        continue;
+      }
+      if (!effect.bound_var && !effect.semantic_text) {
         continue;
       }
       conclusions.push({
@@ -142,9 +217,10 @@ export function buildMathViewModel(ir: PatternIr, source: string): MathViewModel
   return {
     ruleName: parseRuleNameFromSource(source, ir.scope.text_range),
     premises: patternEntries,
-    sideConditions: ir.constraints.map((constraint) =>
-      compactConstraintLabel(constraint.source_text, constraint.resolved_text)
-    ),
+    sideConditions: ir.constraints.map((constraint) => {
+      const semantic = constraint.semantic_text?.trim();
+      return semantic ? semanticTextToTypst(semantic) : compactConstraintLabel(constraint.source_text, constraint.resolved_text);
+    }),
     derivations: actionEntries,
     conclusions,
   };
