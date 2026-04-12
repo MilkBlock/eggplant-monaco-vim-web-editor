@@ -56,6 +56,7 @@ import { renderDotToSvg } from './webDotRenderer';
 import { buildSnapshotInspectorModel, type SnapshotInspectorModel } from './snapshotInspector';
 import { decodeBinaryPersistedSnapshot } from './snapshotBinary';
 import { buildMathViewModel, buildMathViewTypstSource, type MathViewModel } from './mathView';
+import { resolveSampleSelectionState } from './sampleSelection';
 import { transpileEggSource } from './webTranspiler';
 
 type SampleFile = {
@@ -1454,10 +1455,23 @@ export default function App() {
   };
 
   const handleSelectSample = (sampleId: string) => {
+    const nextSample = sampleFiles.find((file) => file.id === sampleId) ?? sampleFiles[0];
+    const nextState = resolveSampleSelectionState({
+      sampleId: nextSample.id,
+      sampleSource: nextSample.source,
+    });
     startTransition(() => {
-      setSelectedId(sampleId);
+      setSelectedId(nextState.selectedId);
+      setSource(nextState.source);
+      setTranspilerInput(nextState.transpilerInput);
+      setEggRuleMapping(null);
+      setTranspilerStatus(nextState.transpilerStatus);
     });
   };
+
+  const editorTitle = eggRuleMapping && source === eggRuleMapping.generatedRust
+    ? 'generated_from_egg.rs'
+    : selectedFile.label;
 
   const revealRangeInEditor = (
     editor: MonacoEditorInstance | null,
@@ -2121,7 +2135,7 @@ export default function App() {
           <div className="toolbar">
             <div>
               <p className="eyebrow">Editor</p>
-              <h2>generated_from_egg.rs</h2>
+              <h2>{editorTitle}</h2>
             </div>
             <div className="toolbar-meta">
               <span>{stats.lineCount} lines</span>

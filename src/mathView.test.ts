@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import type { PatternIr } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/ir';
 import { buildMathViewModel, buildMathViewTypstSource } from './mathView';
+import { resolveSampleSelectionState } from './sampleSelection';
 
 test('buildMathViewModel organizes diff_mul into premises, derivations, and rewrite conclusion', () => {
   const ir: PatternIr = {
@@ -150,4 +151,16 @@ test('buildMathViewTypstSource produces one multiline inference-rule formula', (
   assert.match(source, / \\ /);
   assert.match(source, /arrow\.r\.double/);
   assert.match(source, /guard\(a, b\)/);
+});
+
+test('resolveSampleSelectionState exits generated-from-egg mode when switching rust demos', () => {
+  const next = resolveSampleSelectionState({
+    sampleId: 'relation',
+    sampleSource: 'fn relation_demo() {}',
+  });
+
+  assert.equal(next.selectedId, 'relation');
+  assert.equal(next.source, 'fn relation_demo() {}');
+  assert.equal(next.transpilerInput, '');
+  assert.equal(next.transpilerStatus, 'Paste or edit a .egg program in the left editor.');
 });
