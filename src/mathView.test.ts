@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { patternIrToDotWithMode } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/dot';
 import type { PatternIr } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/ir';
 import { buildMathViewModel, buildMathViewTypstSource } from './mathView';
 import { resolveSampleSelectionState } from './sampleSelection';
@@ -174,4 +175,34 @@ test('normalizeWebTypstSource keeps fibonacci formulas math-safe', () => {
     normalizeWebTypstSource('#text(fill: rgb("#5F7A8A"))[$ fib(x1) $]'),
     '#text(fill: rgb("#5F7A8A"))[$ upright("fib")(x_1) $]',
   );
+});
+
+test('patternIrToDotWithMode sizes typst-backed nodes from actual svg dimensions without hard minimum clamp', () => {
+  const ir: PatternIr = {
+    scope: {
+      kind: 'pattern_function',
+      text_range: { start: 0, end: 10 },
+      pattern_range: { start: 0, end: 10 },
+      action_range: null,
+    },
+    nodes: [
+      { id: 'f0', kind: 'query', dsl_type: 'fib', label: 'f0: fib', range: { start: 0, end: 4 }, inputs: ['x'] },
+      { id: 'x', kind: 'query_leaf', dsl_type: 'Math', label: 'x: Math', range: { start: 5, end: 6 }, inputs: [] },
+    ],
+    edges: [{ from: 'f0', to: 'x', kind: 'operand', index: 0 }],
+    roots: ['f0'],
+    constraints: [],
+    action_effects: [],
+    seed_facts: [],
+    display_templates: [],
+    typst_templates: [{ variant_name: 'fib', template: 'fib({x})', fields: ['x'] }],
+    precedence_templates: [{ variant_name: 'fib', precedence: 90 }],
+    diagnostics: [],
+  };
+
+  const dot = patternIrToDotWithMode(ir, 'pattern', 'recursive', 'tree-safe', {
+    f0: { width: 25.929, height: 10.438 },
+  });
+
+  assert.match(dot, /"f0" \[.*width=0\.666.*height=0\.395.*\]/);
 });

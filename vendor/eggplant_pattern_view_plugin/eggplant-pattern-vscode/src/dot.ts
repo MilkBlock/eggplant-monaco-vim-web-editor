@@ -54,8 +54,8 @@ function applyTypstSizing(attrs: string[], targetId: string, typstSizing: Record
     return;
   }
 
-  attrs.push(`width=${inchesFromPoints(sizing.width, 22, 0.75)}`);
-  attrs.push(`height=${inchesFromPoints(sizing.height, 18, 0.45)}`);
+  attrs.push(`width=${inchesFromPoints(sizing.width, 22, 0)}`);
+  attrs.push(`height=${inchesFromPoints(sizing.height, 18, 0)}`);
   attrs.push('margin="0.16,0.12"');
 }
 
