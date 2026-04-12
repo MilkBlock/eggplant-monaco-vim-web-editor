@@ -204,5 +204,5 @@ test('patternIrToDotWithMode sizes typst-backed nodes from actual svg dimensions
     f0: { width: 25.929, height: 10.438 },
   });
 
-  assert.match(dot, /"f0" \[.*width=0\.666.*height=0\.395.*\]/);
+  assert.match(dot, /"f0" \[.*width=0\.666.*height=0\.395.*fixedsize=true.*\]/);
 });
