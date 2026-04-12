@@ -111,16 +111,31 @@ function semanticTextToTypst(source: string): string {
   return result;
 }
 
+function stripTypstPreviewDecorations(source: string): string {
+  let current = source.trim();
+  while (true) {
+    const next = current
+      .replace(/^#text\(fill: rgb\("#[0-9A-Fa-f]{6}"\)\)\[\$ ([\s\S]+) \$\]$/, '$1')
+      .replace(/^\(#text\(fill: rgb\("#[0-9A-Fa-f]{6}"\)\)\[([\s\S]+)\]\)$/, '$1')
+      .trim();
+    if (next === current) {
+      return next;
+    }
+    current = next;
+  }
+}
+
 function buildEntry(targetId: string, source: string, ir: PatternIr): MathViewEntry {
   const node = ir.nodes.find((entry) => entry.id === targetId);
   const effect = ir.action_effects.find((entry) => `effect:${entry.id}` === targetId);
+  const plainSource = stripTypstPreviewDecorations(source);
   const semanticSource = effect?.semantic_text
     ? semanticTextToTypst(effect.semantic_text)
     : node?.kind === 'query_leaf'
       ? semanticTextToTypst(node.id)
       : node && isFunctionLikeDslType(node.dsl_type)
         ? semanticTextToTypst(`${node.dsl_type}(${node.inputs.join(', ')})`)
-        : source;
+        : plainSource;
   return {
     targetId,
     source: semanticSource,
