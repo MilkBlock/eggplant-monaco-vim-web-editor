@@ -283,7 +283,7 @@ select {
 
 .graph-preview {
   position: relative;
-  overflow: hidden;
+  overflow: auto;
   border-radius: 16px;
   background: rgba(7, 10, 15, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -292,7 +292,8 @@ select {
 
 .graph-preview svg {
   display: block;
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   height: auto;
 }
 
