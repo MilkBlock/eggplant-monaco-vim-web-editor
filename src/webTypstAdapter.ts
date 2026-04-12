@@ -9,7 +9,7 @@ import {
   RenderedTypstSnippet,
   TypstSnippetRenderer,
 } from '@eggplant-shared/typstCore';
-import { normalizeWebTypstSource } from './typstNormalization';
+import { buildMathRenderSources } from './typstNormalization';
 
 const successfulRenderCache = new Map<string, RenderedTypstSnippet>();
 const inFlightRenderCache = new Map<string, Promise<RenderedTypstSnippet>>();
@@ -99,26 +99,30 @@ async function renderTypstSource(source: string): Promise<RenderedTypstSnippet> 
 
 async function renderMathSnippet(source: string): Promise<RenderedTypstSnippet> {
   ensureWasmImporter();
-  const normalizedSource = normalizeWebTypstSource(source);
-  try {
-    const svg = await withTimeout(webTypstRenderer.render(buildTypstMathDocument(normalizedSource)), 'typst math render');
-    const rendered: RenderedTypstSnippet = {
-      svg,
-      width: parseTypstSvgDimension(svg, 'width'),
-      height: parseTypstSvgDimension(svg, 'height'),
-      mode: 'math',
-    };
-    successfulRenderCache.set(source, rendered);
-    return rendered;
-  } catch (error) {
-    console.warn('Eggplant web typst math render failed; using text fallback.', error);
-    const rendered: RenderedTypstSnippet = {
-      svg: '',
-      width: 0,
-      height: 0,
-      mode: 'text-fallback',
-    };
-    successfulRenderCache.set(source, rendered);
-    return rendered;
+  const attempts = buildMathRenderSources(source);
+  for (const candidate of attempts) {
+    try {
+      const svg = await withTimeout(webTypstRenderer.render(buildTypstMathDocument(candidate)), 'typst math render');
+      const rendered: RenderedTypstSnippet = {
+        svg,
+        width: parseTypstSvgDimension(svg, 'width'),
+        height: parseTypstSvgDimension(svg, 'height'),
+        mode: 'math',
+      };
+      successfulRenderCache.set(source, rendered);
+      return rendered;
+    } catch {
+      // Try the next candidate if normalization is available.
+    }
   }
+
+  console.warn('Eggplant web typst math render failed after raw + normalized attempts; using text fallback.');
+  const rendered: RenderedTypstSnippet = {
+    svg: '',
+    width: 0,
+    height: 0,
+    mode: 'text-fallback',
+  };
+  successfulRenderCache.set(source, rendered);
+  return rendered;
 }

@@ -5,7 +5,7 @@ import { patternIrToDotWithMode } from '../vendor/eggplant_pattern_view_plugin/e
 import type { PatternIr } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/ir';
 import { buildMathViewModel, buildMathViewTypstSource } from './mathView';
 import { resolveSampleSelectionState } from './sampleSelection';
-import { normalizeWebTypstSource } from './typstNormalization';
+import { buildMathRenderSources, normalizeWebTypstSource } from './typstNormalization';
 
 test('buildMathViewModel organizes diff_mul into premises, derivations, and rewrite conclusion', () => {
   const ir: PatternIr = {
@@ -175,6 +175,11 @@ test('normalizeWebTypstSource keeps fibonacci formulas math-safe', () => {
     normalizeWebTypstSource('#text(fill: rgb("#5F7A8A"))[$ fib(x1) $]'),
     '#text(fill: rgb("#5F7A8A"))[$ upright("fib")(x_1) $]',
   );
+});
+
+test('buildMathRenderSources retries normalized math source only after the raw source', () => {
+  assert.deepEqual(buildMathRenderSources('fib(x1)'), ['fib(x1)', 'upright("fib")(x_1)']);
+  assert.deepEqual(buildMathRenderSources('x^2 + y^2'), ['x^2 + y^2']);
 });
 
 test('patternIrToDotWithMode sizes typst-backed nodes from actual svg dimensions without hard minimum clamp', () => {
