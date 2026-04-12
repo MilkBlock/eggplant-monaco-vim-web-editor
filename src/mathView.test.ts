@@ -4,6 +4,7 @@ import test from 'node:test';
 import type { PatternIr } from '../vendor/eggplant_pattern_view_plugin/eggplant-pattern-vscode/src/ir';
 import { buildMathViewModel, buildMathViewTypstSource } from './mathView';
 import { resolveSampleSelectionState } from './sampleSelection';
+import { normalizeWebTypstSource } from './typstNormalization';
 
 test('buildMathViewModel organizes diff_mul into premises, derivations, and rewrite conclusion', () => {
   const ir: PatternIr = {
@@ -163,4 +164,14 @@ test('resolveSampleSelectionState exits generated-from-egg mode when switching r
   assert.equal(next.source, 'fn relation_demo() {}');
   assert.equal(next.transpilerInput, '');
   assert.equal(next.transpilerStatus, 'Paste or edit a .egg program in the left editor.');
+});
+
+test('normalizeWebTypstSource keeps fibonacci formulas math-safe', () => {
+  assert.equal(normalizeWebTypstSource('fib(x)'), 'upright("fib")(x)');
+  assert.equal(normalizeWebTypstSource('fib(x1)'), 'upright("fib")(x_1)');
+  assert.equal(normalizeWebTypstSource('fib(x2) = f0 + f1'), 'upright("fib")(x_2) = f_0 + f_1');
+  assert.equal(
+    normalizeWebTypstSource('#text(fill: rgb("#5F7A8A"))[$ fib(x1) $]'),
+    '#text(fill: rgb("#5F7A8A"))[$ upright("fib")(x_1) $]',
+  );
 });

@@ -9,6 +9,7 @@ import {
   RenderedTypstSnippet,
   TypstSnippetRenderer,
 } from '@eggplant-shared/typstCore';
+import { normalizeWebTypstSource } from './typstNormalization';
 
 const successfulRenderCache = new Map<string, RenderedTypstSnippet>();
 const inFlightRenderCache = new Map<string, Promise<RenderedTypstSnippet>>();
@@ -98,8 +99,9 @@ async function renderTypstSource(source: string): Promise<RenderedTypstSnippet> 
 
 async function renderMathSnippet(source: string): Promise<RenderedTypstSnippet> {
   ensureWasmImporter();
+  const normalizedSource = normalizeWebTypstSource(source);
   try {
-    const svg = await withTimeout(webTypstRenderer.render(buildTypstMathDocument(source)), 'typst math render');
+    const svg = await withTimeout(webTypstRenderer.render(buildTypstMathDocument(normalizedSource)), 'typst math render');
     const rendered: RenderedTypstSnippet = {
       svg,
       width: parseTypstSvgDimension(svg, 'width'),
