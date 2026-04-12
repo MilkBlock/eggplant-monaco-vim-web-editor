@@ -128,20 +128,22 @@ function buildEntry(targetId: string, source: string, ir: PatternIr): MathViewEn
   };
 }
 
-function parseUnionConclusion(effect: ActionEffect): { patternVar: string; actionVar: string } | null {
+function parseUnionConclusion(effect: ActionEffect): { patternVar: string; targetKind: 'action' | 'pattern'; targetVar: string } | null {
   const match = effect.source_text.match(
-    /(?:[A-Za-z_][A-Za-z0-9_]*\.)?union\(\s*(?:pat|matched)\.([A-Za-z_][A-Za-z0-9_]*)\s*,\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)/
+    /(?:[A-Za-z_][A-Za-z0-9_]*\.)?union\(\s*(?:pat|matched)\.([A-Za-z_][A-Za-z0-9_]*)\s*,\s*((?:(?:pat|matched)\.)?)([A-Za-z_][A-Za-z0-9_]*)\s*\)/
   );
   if (match) {
     return {
       patternVar: match[1],
-      actionVar: match[2],
+      targetKind: match[2] ? 'pattern' : 'action',
+      targetVar: match[3],
     };
   }
   if (effect.referenced_pat_vars.length === 1 && effect.referenced_action_vars.length === 1) {
     return {
       patternVar: effect.referenced_pat_vars[0],
-      actionVar: effect.referenced_action_vars[0],
+      targetKind: 'action',
+      targetVar: effect.referenced_action_vars[0],
     };
   }
   return null;
@@ -157,6 +159,20 @@ export function buildMathViewModel(ir: PatternIr, source: string): MathViewModel
     .map((entry) => buildEntry(entry.targetId, entry.source, ir));
 
   const patternById = new Map(patternEntries.map((entry) => [entry.targetId, entry] as const));
+  const ensurePatternEntry = (targetId: string): MathViewEntry | undefined => {
+    const existing = patternById.get(targetId);
+    if (existing) {
+      return existing;
+    }
+    const knownPatternTarget =
+      ir.nodes.some((node) => node.id === targetId) || ir.roots.includes(targetId);
+    if (!knownPatternTarget) {
+      return undefined;
+    }
+    const fallback = buildEntry(targetId, semanticTextToTypst(targetId), ir);
+    patternById.set(targetId, fallback);
+    return fallback;
+  };
   const actionByBoundVar = new Map(
     ir.action_effects
       .filter((effect) => effect.bound_var)
@@ -170,8 +186,10 @@ export function buildMathViewModel(ir: PatternIr, source: string): MathViewModel
     if (!union) {
       continue;
     }
-    const from = patternById.get(union.patternVar);
-    const to = actionByBoundVar.get(union.actionVar);
+    const from = ensurePatternEntry(union.patternVar);
+    const to = union.targetKind === 'pattern'
+      ? ensurePatternEntry(union.targetVar)
+      : actionByBoundVar.get(union.targetVar);
     if (!from || !to) {
       continue;
     }
