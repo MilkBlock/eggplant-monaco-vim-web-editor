@@ -834,6 +834,17 @@ select {
   color: #0f1720;
 }
 
+.math-formula-panel-content {
+  overflow: auto;
+  padding: 18px;
+  cursor: ew-resize;
+}
+
+.math-formula-panel-canvas {
+  width: max-content;
+  min-width: 100%;
+}
+
 .math-inference-top {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);

@@ -185,6 +185,12 @@ type GraphZoomState = {
   fallbackText: string;
 };
 
+type MathFormulaPanelState = {
+  open: boolean;
+  svg: string;
+  fallbackText: string;
+};
+
 type SnapshotTypstOverlay = {
   id: string;
   nodeId: string;
@@ -224,6 +230,12 @@ const closedGraphContextMenu: GraphContextMenuState = {
 const closedGraphZoom: GraphZoomState = {
   open: false,
   sourceMode: 'code',
+  svg: '',
+  fallbackText: '',
+};
+
+const closedMathFormulaPanel: MathFormulaPanelState = {
+  open: false,
   svg: '',
   fallbackText: '',
 };
@@ -764,6 +776,8 @@ export default function App() {
   const [graphContextMenu, setGraphContextMenu] = useState<GraphContextMenuState>(closedGraphContextMenu);
   const [graphZoomState, setGraphZoomState] = useState<GraphZoomState>(closedGraphZoom);
   const [graphZoomScale, setGraphZoomScale] = useState(1);
+  const [mathFormulaPanelState, setMathFormulaPanelState] = useState<MathFormulaPanelState>(closedMathFormulaPanel);
+  const [mathFormulaPanelScrollLeft, setMathFormulaPanelScrollLeft] = useState(0);
   const [focusMode, setFocusMode] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState(false);
   const [snapshotGraphMode, setSnapshotGraphMode] = useState<'rows' | 'eqclass' | 'typst'>('typst');
@@ -785,6 +799,7 @@ export default function App() {
   const statusRef = useRef<HTMLDivElement | null>(null);
   const graphPreviewRef = useRef<HTMLDivElement | null>(null);
   const graphZoomContentRef = useRef<HTMLDivElement | null>(null);
+  const mathFormulaPanelRef = useRef<HTMLDivElement | null>(null);
   const snapshotFileInputRef = useRef<HTMLInputElement | null>(null);
   const snapshotTypstOverlayDragRef = useRef<{
     active: boolean;
@@ -813,6 +828,15 @@ export default function App() {
     startY: 0,
     startScrollLeft: 0,
     startScrollTop: 0,
+  });
+  const mathFormulaPanRef = useRef<{
+    active: boolean;
+    startX: number;
+    startScrollLeft: number;
+  }>({
+    active: false,
+    startX: 0,
+    startScrollLeft: 0,
   });
   const graphZoomSuppressClickRef = useRef(false);
   const editorRef = useRef<MonacoEditorInstance | null>(null);
@@ -1586,12 +1610,42 @@ export default function App() {
   const handleMathViewDoubleClick = () => {
     const rendering = typstRenderings[mathViewFormulaId];
     setGraphContextMenu(closedGraphContextMenu);
-    setGraphZoomState({
+    setMathFormulaPanelState({
       open: true,
-      sourceMode: 'math',
       svg: rendering?.mode === 'math' ? rendering.svg : '',
       fallbackText: displayTextFallbackSource(normalizeTypstMathSource(mathViewFormulaSource)),
     });
+  };
+
+  const handleMathFormulaPanelPointerDown = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const container = mathFormulaPanelRef.current;
+    if (!container || event.button !== 0) {
+      return;
+    }
+    mathFormulaPanRef.current = {
+      active: true,
+      startX: event.clientX,
+      startScrollLeft: container.scrollLeft,
+    };
+  };
+
+  const handleMathFormulaPanelPointerMove = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const container = mathFormulaPanelRef.current;
+    const pan = mathFormulaPanRef.current;
+    if (!container || !pan.active) {
+      return;
+    }
+    const deltaX = event.clientX - pan.startX;
+    container.scrollLeft = pan.startScrollLeft - deltaX;
+    setMathFormulaPanelScrollLeft(container.scrollLeft);
+  };
+
+  const handleMathFormulaPanelPointerUp = () => {
+    mathFormulaPanRef.current = {
+      active: false,
+      startX: 0,
+      startScrollLeft: 0,
+    };
   };
 
   const handleToggleFocusMode = () => {
@@ -1816,7 +1870,7 @@ export default function App() {
   }, [graphContextMenu.open]);
 
   useEffect(() => {
-    if (!graphZoomState.open && !focusMode && snapshotTypstOverlays.length === 0) {
+    if (!graphZoomState.open && !mathFormulaPanelState.open && !focusMode && snapshotTypstOverlays.length === 0) {
       return;
     }
     const handleEscape = (event: KeyboardEvent) => {
@@ -1830,6 +1884,10 @@ export default function App() {
           setClipboardStatus('Exited Focus Mode.');
           return;
         }
+        if (mathFormulaPanelState.open) {
+          setMathFormulaPanelState(closedMathFormulaPanel);
+          return;
+        }
         setGraphZoomState(closedGraphZoom);
       }
     };
@@ -1840,7 +1898,7 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [focusMode, graphZoomState.open, snapshotTypstOverlays.length]);
+  }, [focusMode, graphZoomState.open, mathFormulaPanelState.open, snapshotTypstOverlays.length]);
 
   useEffect(() => {
     if (graphZoomState.open) {
@@ -2264,7 +2322,10 @@ export default function App() {
                       <span>{mathViewModel.conclusions.length > 0 ? 'rewrite' : 'prototype'}</span>
                     </div>
                     <div className="math-inference-rule">
-                      <div className="math-formula-scroll" onDoubleClick={handleMathViewDoubleClick}>
+                      <div
+                        className="math-formula-scroll"
+                        onDoubleClick={handleMathViewDoubleClick}
+                      >
                         <div className="math-formula-canvas">
                           {renderMathRuleFormulaPreview(
                             mathViewFormulaId,
@@ -2274,6 +2335,9 @@ export default function App() {
                           )}
                         </div>
                       </div>
+                      <p className="subtle">
+                        Drag horizontally or use the scroll bar to inspect long formulas. Double click to open a larger formula panel.
+                      </p>
                     </div>
                   </div>
 
@@ -2776,6 +2840,44 @@ export default function App() {
                       )
                     : <pre className="typst-fallback-text">{graphZoomState.fallbackText}</pre>
                   : <div dangerouslySetInnerHTML={{ __html: graphZoomState.svg }} />}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {mathFormulaPanelState.open ? (
+        <div className="graph-zoom-modal" onClick={() => setMathFormulaPanelState(closedMathFormulaPanel)}>
+          <div
+            className="graph-zoom-panel"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="graph-zoom-header">
+              <strong>Math Formula</strong>
+              <div className="button-row">
+                <span className="status-pill">Scroll {Math.round(mathFormulaPanelScrollLeft)}px</span>
+                <button className="action-button" onClick={() => setMathFormulaPanelState(closedMathFormulaPanel)} type="button">
+                  Close
+                </button>
+              </div>
+            </div>
+            <div
+              className="math-formula-panel-content"
+              ref={mathFormulaPanelRef}
+              onMouseDown={handleMathFormulaPanelPointerDown}
+              onMouseMove={handleMathFormulaPanelPointerMove}
+              onMouseUp={handleMathFormulaPanelPointerUp}
+              onMouseLeave={handleMathFormulaPanelPointerUp}
+              onScroll={(event) => setMathFormulaPanelScrollLeft(event.currentTarget.scrollLeft)}
+            >
+              <div className="math-formula-panel-canvas">
+                {mathFormulaPanelState.svg ? (
+                  <div
+                    className="math-formula-svg-inner"
+                    dangerouslySetInnerHTML={{ __html: mathFormulaPanelState.svg }}
+                  />
+                ) : (
+                  <pre className="typst-fallback-text">{mathFormulaPanelState.fallbackText}</pre>
+                )}
               </div>
             </div>
           </div>
