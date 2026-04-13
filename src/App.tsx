@@ -901,6 +901,12 @@ export default function App() {
   );
   const mathViewModel = useMemo(() => buildMathViewModel(fixture.ir, source), [fixture.ir, source]);
   const mathViewFormulaSource = useMemo(() => buildMathViewTypstSource(mathViewModel), [mathViewModel]);
+  useEffect(() => {
+    (window as typeof window & { __eggplantDebug?: Record<string, unknown> }).__eggplantDebug = {
+      mathViewRuleName: mathViewModel.ruleName,
+      mathViewFormulaSource,
+    };
+  }, [mathViewFormulaSource, mathViewModel.ruleName]);
   const mathViewFormulaId = useMemo(() => mathViewFormulaTargetId(mathViewModel.ruleName), [mathViewModel.ruleName]);
   const mathViewSources = useMemo(() => collectMathViewSources(mathViewModel), [mathViewModel]);
   const activeTypstSources = useMemo(
@@ -2339,7 +2345,7 @@ export default function App() {
                     </span>
                   </div>
 
-                  <div className="math-section">
+                  <div className="math-section math-inference-panel">
                     <div className="panel-header">
                       <h3>Inference Rule</h3>
                       <span>{mathViewModel.conclusions.length > 0 ? 'rewrite' : 'prototype'}</span>
