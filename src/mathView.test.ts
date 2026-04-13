@@ -15,101 +15,46 @@ test('buildMathViewModel organizes diff_mul into premises, derivations, and rewr
       pattern_range: { start: 20, end: 120 },
       action_range: { start: 121, end: 220 },
     },
-    nodes: [
-      { id: 'x', kind: 'query_leaf', dsl_type: 'Math', label: 'x: Math', range: { start: 20, end: 21 }, inputs: [] },
-      { id: 'a', kind: 'query_leaf', dsl_type: 'Math', label: 'a: Math', range: { start: 22, end: 23 }, inputs: [] },
-      { id: 'b', kind: 'query_leaf', dsl_type: 'Math', label: 'b: Math', range: { start: 24, end: 25 }, inputs: [] },
-      { id: 'mul', kind: 'query', dsl_type: 'MMul', label: 'mul: MMul', range: { start: 26, end: 38 }, inputs: ['a', 'b'] },
-      { id: 'diff', kind: 'query', dsl_type: 'MDiff', label: 'diff: MDiff', range: { start: 39, end: 52 }, inputs: ['x', 'mul'] },
-    ],
-    edges: [
-      { from: 'mul', to: 'a', kind: 'operand', index: 0 },
-      { from: 'mul', to: 'b', kind: 'operand', index: 1 },
-      { from: 'diff', to: 'x', kind: 'operand', index: 0 },
-      { from: 'diff', to: 'mul', kind: 'operand', index: 1 },
-    ],
-    roots: ['x', 'a', 'b', 'diff'],
-    constraints: [
-      {
-        id: 'constraint_0',
-        source_text: 'guard(a, b)',
-        resolved_text: 'guard(a, b)',
-        referenced_vars: ['a', 'b'],
-        range: { start: 53, end: 63 },
-      },
-    ],
-    action_effects: [
-      {
-        id: 'effect_0',
-        effect_id: 'effect@130:150',
-        bound_var: 'db',
-        source_text: 'ctx.insert_m_diff(pat.x, pat.b)',
-        referenced_pat_vars: ['b', 'x'],
-        referenced_action_vars: [],
-        range: { start: 130, end: 150 },
-      },
-      {
-        id: 'effect_1',
-        effect_id: 'effect@151:171',
-        bound_var: 'da',
-        source_text: 'ctx.insert_m_diff(pat.x, pat.a)',
-        referenced_pat_vars: ['a', 'x'],
-        referenced_action_vars: [],
-        range: { start: 151, end: 171 },
-      },
-      {
-        id: 'effect_2',
-        effect_id: 'effect@172:190',
-        bound_var: 'a_db',
-        source_text: 'ctx.insert_m_mul(pat.a, db)',
-        referenced_pat_vars: ['a'],
-        referenced_action_vars: ['db'],
-        range: { start: 172, end: 190 },
-      },
-      {
-        id: 'effect_3',
-        effect_id: 'effect@191:209',
-        bound_var: 'b_da',
-        source_text: 'ctx.insert_m_mul(pat.b, da)',
-        referenced_pat_vars: ['b'],
-        referenced_action_vars: ['da'],
-        range: { start: 191, end: 209 },
-      },
-      {
-        id: 'effect_4',
-        effect_id: 'effect@210:228',
-        bound_var: 'rhs',
-        source_text: 'ctx.insert_m_add(a_db, b_da)',
-        referenced_pat_vars: [],
-        referenced_action_vars: ['a_db', 'b_da'],
-        range: { start: 210, end: 228 },
-      },
-      {
-        id: 'effect_5',
-        effect_id: 'effect@229:240',
-        bound_var: null,
-        source_text: 'ctx.union(pat.diff, rhs)',
-        referenced_pat_vars: ['diff'],
-        referenced_action_vars: ['rhs'],
-        range: { start: 229, end: 240 },
-      },
-    ],
+    nodes: [],
+    edges: [],
+    roots: [],
+    constraints: [],
+    action_effects: [],
     seed_facts: [],
     display_templates: [],
-    typst_templates: [
-      { variant_name: 'MMul', template: '{a} * {b}', fields: ['a', 'b'] },
-      { variant_name: 'MDiff', template: '{f}\'({x})', fields: ['x', 'f'] },
-      { variant_name: 'MAdd', template: '{a} + {b}', fields: ['a', 'b'] },
-    ],
-    precedence_templates: [
-      { variant_name: 'MMul', precedence: 60 },
-      { variant_name: 'MDiff', precedence: 90 },
-      { variant_name: 'MAdd', precedence: 50 },
-    ],
+    typst_templates: [],
+    precedence_templates: [],
     diagnostics: [],
-  };
+    math_view: {
+      rule_name: 'diff_mul',
+      premises: [
+        { target_id: 'mul', label: 'mul', plain_source: 'a * b', colored_source: `#text(fill: rgb("#5F7A8A"))[$ a * b $]` },
+        { target_id: 'diff', label: 'diff', plain_source: `(a * b)'(x)`, colored_source: `#text(fill: rgb("#5F7A8A"))[$ (a * b)'(x) $]` },
+      ],
+      side_conditions: ['guard(a, b)'],
+      derivations: [
+        { target_id: 'effect:effect_0', label: 'db', plain_source: "b'(x)", colored_source: `#text(fill: rgb("#B86A5B"))[$ b'(x) $]` },
+        { target_id: 'effect:effect_1', label: 'da', plain_source: "a'(x)", colored_source: `#text(fill: rgb("#B86A5B"))[$ a'(x) $]` },
+        { target_id: 'effect:effect_2', label: 'a_db', plain_source: "a * b'(x)", colored_source: `#text(fill: rgb("#B86A5B"))[$ a * b'(x) $]` },
+        { target_id: 'effect:effect_3', label: 'b_da', plain_source: "b * a'(x)", colored_source: `#text(fill: rgb("#B86A5B"))[$ b * a'(x) $]` },
+        { target_id: 'effect:effect_4', label: 'rhs', plain_source: "a * b'(x) + b * a'(x)", colored_source: `#text(fill: rgb("#B86A5B"))[$ a * b'(x) + b * a'(x) $]` },
+      ],
+      conclusions: [
+        {
+          id: 'effect_5',
+          kind: 'rewrite',
+          from: { target_id: 'diff', label: 'diff', plain_source: `(a * b)'(x)`, colored_source: `#text(fill: rgb("#5F7A8A"))[$ (a * b)'(x) $]` },
+          to: { target_id: 'effect:effect_4', label: 'rhs', plain_source: "a * b'(x) + b * a'(x)", colored_source: `#text(fill: rgb("#B86A5B"))[$ a * b'(x) + b * a'(x) $]` },
+        },
+      ],
+      formula_source: {
+        plain: `frac((a * b)'(x), a * b'(x) + b * a'(x)) quad upright("if") quad guard(a, b)`,
+        colored: `#text(fill: rgb("#B86A5B"))[$ frac((a * b)'(x), a * b'(x) + b * a'(x)) quad upright("if") quad guard(a, b) $]`,
+      },
+    },
+  } as PatternIr & { math_view: unknown };
 
-  const model = buildMathViewModel(ir, 'MyTxMath::add_rule("diff_mul", rs, || { ... }, |ctx, pat| { ... })');
+  const model = buildMathViewModel(ir);
 
   assert.equal(model.ruleName, 'diff_mul');
   assert.deepEqual(model.premises.map((entry) => entry.targetId), ['mul', 'diff']);
@@ -128,7 +73,7 @@ test('buildMathViewModel organizes diff_mul into premises, derivations, and rewr
   assert.equal(model.conclusions[0].to?.targetId, 'effect:effect_4');
 });
 
-test('buildMathViewTypstSource produces one multiline inference-rule formula', () => {
+test('buildMathViewTypstSource returns the Rust-provided formula source', () => {
   const model = {
     ruleName: 'diff_mul',
     premises: [
@@ -145,14 +90,17 @@ test('buildMathViewTypstSource produces one multiline inference-rule formula', (
         to: { targetId: 'rhs', source: `a * b'(x) + b * a'(x)`, label: 'rhs' },
       },
     ],
+    formulaSource: {
+      plain: `frac((a * b)'(x), a * b'(x) + b * a'(x)) quad upright("if") quad guard(a, b)`,
+      colored: `#text(fill: rgb("#B86A5B"))[$ frac((a * b)'(x), a * b'(x) + b * a'(x)) quad upright("if") quad guard(a, b) $]`,
+    },
   };
 
   const source = buildMathViewTypstSource(model);
 
   assert.match(source, /frac\(/);
-  assert.match(source, / \\ /);
-  assert.match(source, /arrow\.r\.double/);
   assert.match(source, /guard\(a, b\)/);
+  assert.equal(source, model.formulaSource.plain);
 });
 
 test('resolveSampleSelectionState exits generated-from-egg mode when switching rust demos', () => {
