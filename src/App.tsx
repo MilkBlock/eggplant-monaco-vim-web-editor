@@ -2348,7 +2348,16 @@ export default function App() {
                   <div className="math-section math-inference-panel">
                     <div className="panel-header">
                       <h3>Inference Rule</h3>
-                      <span>{mathViewModel.conclusions.length > 0 ? 'rewrite' : 'prototype'}</span>
+                      <div className="button-row">
+                        <span>{mathViewModel.conclusions.length > 0 ? 'rewrite' : 'prototype'}</span>
+                        <button
+                          className="action-button"
+                          onClick={() => void handleCopyText(mathViewFormulaSource, 'Math View Typst')}
+                          type="button"
+                        >
+                          Copy Typst
+                        </button>
+                      </div>
                     </div>
                     <div className="math-inference-rule">
                       <div
