@@ -799,6 +799,12 @@ select {
   color: #0f1720;
 }
 
+.math-inference-panel .action-button {
+  color: #0f1720;
+  border-color: rgba(15, 23, 32, 0.18);
+  background: rgba(15, 23, 32, 0.06);
+}
+
 .math-inference-rule {
   display: grid;
   gap: 14px;
